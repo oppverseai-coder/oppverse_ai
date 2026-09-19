@@ -270,7 +270,7 @@ export default function HomePage() {
                             ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
                             : 'bg-zinc-900 border-zinc-700 text-zinc-300'
                         }`}>
-                          {match.matchLabel} ({match.matchScore}%)
+                          {match.matchScore}% Match
                         </span>
 
                         <button

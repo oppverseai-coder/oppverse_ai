@@ -170,13 +170,13 @@ export default function DiscoverPage() {
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
                         isIneligible
                           ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
-                          : match.matchScore >= 85
+                          : match.matchScore >= 80
                           ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
-                          : match.matchScore >= 70
+                          : match.matchScore >= 65
                           ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
                           : 'bg-zinc-900 border-zinc-700 text-zinc-300'
                       }`}>
-                        {match.matchLabel} ({match.matchScore}%)
+                        {match.matchScore}% Match
                       </span>
                       <button
                         onClick={(e) => handleToggleSave(opp.id, e)}

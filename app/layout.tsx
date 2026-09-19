@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { NavProvider } from "@/components/NavProvider";
 
 export const metadata: Metadata = {
   title: "Oppverse.ai — Your AI Opportunity Intelligence Platform",
@@ -28,13 +30,16 @@ export default function RootLayout({
       </head>
       <body className="flex min-h-screen">
         <ThemeProvider>
-          <Sidebar />
-          <div className="app-shell flex-1 ml-64 flex flex-col min-h-screen">
-            <Header />
-            <main className="app-main flex-1 pt-20 px-8 pb-12 overflow-y-auto max-w-7xl w-full mx-auto">
-              {children}
-            </main>
-          </div>
+          <NavProvider>
+            <Sidebar />
+            <div className="app-shell flex-1 ml-0 lg:ml-64 flex flex-col min-h-screen pb-16 lg:pb-0 w-full overflow-x-hidden">
+              <Header />
+              <main className="app-main flex-1 pt-20 px-4 sm:px-8 pb-12 overflow-y-auto max-w-7xl w-full mx-auto">
+                {children}
+              </main>
+              <BottomNav />
+            </div>
+          </NavProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { 
@@ -119,11 +119,11 @@ export default function ApplicationsPage() {
       </div>
 
       {/* Kanban / Pipeline View */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="flex md:grid md:grid-cols-6 gap-3 overflow-x-auto pb-2 no-scrollbar snap-x snap-mandatory">
         {statuses.map((status) => {
           const statusApps = apps.filter(a => a.status === status);
           return (
-            <div key={status} className="glass-panel p-3.5 rounded-2xl border border-slate-800 space-y-3">
+            <div key={status} className="min-w-[220px] md:min-w-0 snap-start flex-1 glass-panel p-3.5 rounded-2xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-300">{status}</span>
                 <span className="badge !min-h-5 !px-1.5">
@@ -158,7 +158,7 @@ export default function ApplicationsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
             <div>
               <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                {activeApp.category} • {activeApp.provider}
+                {activeApp.category} â€¢ {activeApp.provider}
               </span>
               <h2 className="text-xl font-bold font-display text-white mt-1">
                 {activeApp.title}

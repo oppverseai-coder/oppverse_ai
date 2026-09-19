@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Bookmark, ExternalLink, ArrowRight, MapPin, Clock } from 'lucide-react';
@@ -28,7 +28,7 @@ export default function SavedPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {savedOpps.map((opp) => (
-          <div key={opp.id} className="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+          <div key={opp.id} className="glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-800 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">{opp.category}</span>
               <span className="text-xs text-emerald-400 font-semibold">{opp.fundingStatus}</span>

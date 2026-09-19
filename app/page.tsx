@@ -241,7 +241,7 @@ export default function HomePage() {
                 <div 
                   key={opp.id}
                   onClick={() => setActiveModalOpp(opp)}
-                  className={`glass-card p-6 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-5 hover:border-zinc-700/90 ${
+                  className={`glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-5 hover:border-zinc-700/90 ${
                     isIneligible 
                       ? 'border-rose-900/40 bg-rose-950/10' 
                       : 'border-zinc-800/80 bg-zinc-950/70'

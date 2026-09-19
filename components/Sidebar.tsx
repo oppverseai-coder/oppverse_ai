@@ -1,21 +1,24 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  LayoutGrid,
+  LayoutGrid, 
   Compass, 
   Target, 
   Bookmark, 
   Briefcase, 
-  MessageSquare,
+  MessageSquare, 
   User, 
-  Activity
+  Activity,
+  X
 } from 'lucide-react';
+import { useNav } from '@/components/NavProvider';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isMobileMenuOpen, closeMobileMenu } = useNav();
 
   const navItems = [
     { name: 'Opportunity Universe', href: '/', icon: LayoutGrid, badge: 'Daily' },
@@ -27,12 +30,12 @@ export default function Sidebar() {
     { name: 'Opportunity Profile', href: '/profile', icon: User, highlight: true },
   ];
 
-  return (
-    <aside className="app-sidebar w-64 h-screen fixed left-0 top-0 glass-panel border-r border-zinc-800 flex flex-col justify-between z-40">
+  const sidebarContent = (
+    <div className="flex flex-col justify-between h-full">
       <div>
         {/* Brand Header */}
         <div className="brand-header px-5 h-16 border-b border-zinc-800 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 group">
             <span className="brand-compact hidden font-display font-semibold text-lg">O</span>
             <div className="brand-copy">
               <span className="font-display font-semibold text-lg tracking-tight text-white">
@@ -43,6 +46,15 @@ export default function Sidebar() {
               </p>
             </div>
           </Link>
+
+          {/* Close button for mobile drawer */}
+          <button
+            onClick={closeMobileMenu}
+            className="lg:hidden icon-button !w-8 !h-8 text-zinc-400 hover:text-white"
+            aria-label="Close navigation menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Navigation Items */}
@@ -58,8 +70,9 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={closeMobileMenu}
                 title={item.name}
-                className={`sidebar-link flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all border ${
+                className={`sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all border ${
                   isActive
                     ? 'sidebar-link-active'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border-transparent'
@@ -86,6 +99,7 @@ export default function Sidebar() {
       <div className="profile-status p-4 border-t border-zinc-800">
         <Link 
           href="/profile"
+          onClick={closeMobileMenu}
           className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 block transition-colors group"
         >
           <div className="flex items-center justify-between mb-2">
@@ -103,6 +117,32 @@ export default function Sidebar() {
           </p>
         </Link>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="app-sidebar hidden lg:flex w-64 h-screen fixed left-0 top-0 glass-panel border-r border-zinc-800 flex-col justify-between z-40">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Slide-Over Drawer with Backdrop */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop Overlay */}
+          <div 
+            onClick={closeMobileMenu}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+          />
+
+          {/* Drawer Sidebar Content */}
+          <div className="relative w-72 max-w-[85vw] h-full bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col shadow-2xl animate-fadeIn">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

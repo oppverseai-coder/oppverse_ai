@@ -690,3 +690,12 @@ select option {
     line-height: 1.35;
   }
 }
+
+/* Responsive Scrollbar & Touch Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

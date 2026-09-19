@@ -16,7 +16,7 @@ import {
   Flame,
   Award
 } from 'lucide-react';
-import { Opportunity, UserProfile, MatchEvaluation } from '@/lib/types';
+import { Opportunity, UserProfile } from '@/lib/types';
 import { evaluateOpportunityMatch } from '@/lib/matching';
 
 interface DailyBriefHeroProps {

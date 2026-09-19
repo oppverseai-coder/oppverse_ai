@@ -13,7 +13,10 @@ import {
   Compass,
   Coins,
   ShieldCheck,
-  Zap
+  Zap,
+  SearchX,
+  SlidersHorizontal,
+  Bot
 } from 'lucide-react';
 import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
 import { evaluateOpportunityMatch } from '@/lib/matching';
@@ -21,6 +24,7 @@ import { Opportunity } from '@/lib/types';
 import OpportunityModal from '@/components/OpportunityModal';
 import DailyBriefHero from '@/components/DailyBriefHero';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 type FeedShelf = 'top_matches' | 'closing_soon' | 'fully_funded' | 'serendipity' | 'all';
 
@@ -106,6 +110,8 @@ export default function HomePage() {
     { id: 'all' as FeedShelf, label: 'All Feed', icon: LayoutGrid, iconColor: 'text-zinc-400' },
   ];
 
+  const currentShelfLabel = shelfTabs.find(t => t.id === selectedShelf)?.label || 'Selected Shelf';
+
   return (
     <div className="space-y-8 animate-fadeIn pb-12">
       {/* Daily Opportunity Brief Hero */}
@@ -175,21 +181,55 @@ export default function HomePage() {
         </div>
 
         {shelfFiltered.length === 0 ? (
-          <div className="p-12 rounded-3xl bg-zinc-950/60 border border-zinc-800 text-center space-y-3">
-            <Compass className="w-8 h-8 text-zinc-500 mx-auto" />
-            <h3 className="text-sm font-semibold text-zinc-300">No opportunities match this filter shelf</h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Try switching your active Universe pill or select &ldquo;All Feed&rdquo; to browse all opportunities.
-            </p>
-            <button
-              onClick={() => {
-                setSelectedShelf('all');
-                setSelectedCategory('All');
-              }}
-              className="btn btn-secondary !min-h-8 !px-3 text-xs"
-            >
-              Reset Filters
-            </button>
+          /* Senior Anti-Slop Empty State */
+          <div className="p-8 rounded-2xl bg-zinc-950/80 border border-zinc-800/90 space-y-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-400">
+                <SearchX className="w-5 h-5 text-zinc-400" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-zinc-100">
+                  No opportunities active in {selectedCategory !== 'All' ? `"${selectedCategory}"` : 'this universe'} under {currentShelfLabel}
+                </h3>
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-xl">
+                  {selectedCategory !== 'All' 
+                    ? `No opportunities currently match both the "${selectedCategory}" category and the "${currentShelfLabel}" filter criteria.`
+                    : `No opportunities currently meet the strict criteria for the "${currentShelfLabel}" shelf.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Contextual Action Cues */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-zinc-800/60 pl-0 sm:pl-13.5">
+              {selectedCategory !== 'All' && (
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className="btn btn-secondary !min-h-8 !px-3 text-xs"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Show all universes for {currentShelfLabel}</span>
+                </button>
+              )}
+
+              {selectedShelf !== 'all' && (
+                <button
+                  onClick={() => setSelectedShelf('all')}
+                  className="btn btn-secondary !min-h-8 !px-3 text-xs"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>View all {selectedCategory !== 'All' ? selectedCategory : 'opportunities'}</span>
+                </button>
+              )}
+
+              <Link
+                href="/missions"
+                className="btn btn-primary !min-h-8 !px-3 text-xs"
+              >
+                <span>Launch Autonomous Mission</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -224,9 +264,9 @@ export default function HomePage() {
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
                           isIneligible
                             ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
-                            : match.matchScore >= 85
+                            : match.matchScore >= 80
                             ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
-                            : match.matchScore >= 70
+                            : match.matchScore >= 65
                             ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
                             : 'bg-zinc-900 border-zinc-700 text-zinc-300'
                         }`}>
@@ -238,7 +278,7 @@ export default function HomePage() {
                           className={`icon-button !w-8 !h-8 !min-h-0 !flex-[0_0_32px] ${
                             isSaved 
                               ? 'bg-indigo-600/30 border-indigo-500 text-cyan-400' 
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                           }`}
                           aria-label="Save opportunity"
                         >

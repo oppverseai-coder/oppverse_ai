@@ -150,8 +150,8 @@ export default function DiscoverPage() {
               <div
                 key={opp.id}
                 onClick={() => handleOpenDetail(opp)}
-                className={`glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border cursor-pointer flex flex-col justify-between space-y-4 group transition-all duration-200 hover:border-zinc-700/90 ${
-                  isIneligible ? 'border-rose-900/40 bg-rose-950/10' : 'border-zinc-800/80 bg-zinc-950/70'
+                className={`opportunity-card glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border cursor-pointer flex flex-col justify-between space-y-4 group transition-all duration-200 ${
+                  isIneligible ? 'border-rose-900/40 bg-rose-950/10' : ''
                 }`}
               >
                 <div>
@@ -171,10 +171,8 @@ export default function DiscoverPage() {
                         isIneligible
                           ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
                           : match.matchScore >= 80
-                          ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
-                          : match.matchScore >= 65
-                          ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
-                          : 'bg-zinc-900 border-zinc-700 text-zinc-300'
+                          ? 'match-badge'
+                          : 'match-badge-neutral'
                       }`}>
                         {match.matchScore}% Match
                       </span>
@@ -203,15 +201,15 @@ export default function DiscoverPage() {
 
                 {/* Metadata Pills */}
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400 pt-2 border-t border-zinc-800/60">
-                  <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 flex items-center gap-1">
+                  <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-zinc-500" />
                     {opp.locationType}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-cyan-300">
+                  <span className="metadata-chip px-2 py-0.5 rounded-md">
                     <Coins className="w-3 h-3 text-cyan-400 inline mr-1" />
                     {opp.fundingStatus}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 flex items-center gap-1">
+                  <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
                     <Clock className="w-3 h-3 text-zinc-500" />
                     {new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>

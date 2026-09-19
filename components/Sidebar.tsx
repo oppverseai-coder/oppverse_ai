@@ -12,40 +12,65 @@ import {
   MessageSquare, 
   User, 
   Activity,
-  X
+  X,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useNav } from '@/components/NavProvider';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { isMobileMenuOpen, closeMobileMenu } = useNav();
+  const { isMobileMenuOpen, closeMobileMenu, isSidebarCollapsed, toggleSidebar } = useNav();
 
   const navItems = [
-    { name: 'Opportunity Universe', href: '/', icon: LayoutGrid, badge: 'Daily' },
+    { name: 'Opportunity Universe', href: '/', icon: LayoutGrid },
     { name: 'Discover', href: '/discover', icon: Compass },
-    { name: 'My Missions', href: '/missions', icon: Target, badge: '3 Active' },
+    { name: 'My Missions', href: '/missions', icon: Target },
     { name: 'Saved Opportunities', href: '/saved', icon: Bookmark },
-    { name: 'Applications & Tracker', href: '/applications', icon: Briefcase, badge: '4' },
+    { name: 'Applications & Tracker', href: '/applications', icon: Briefcase },
     { name: 'Oppverse AI Agent', href: '/agent', icon: MessageSquare },
     { name: 'Opportunity Profile', href: '/profile', icon: User, highlight: true },
   ];
 
-  const sidebarContent = (
+  const sidebarContent = (collapsed = false) => (
     <div className="flex flex-col justify-between h-full">
       <div>
         {/* Brand Header */}
-        <div className="brand-header px-5 h-16 border-b border-zinc-800 flex items-center justify-between">
-          <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 group">
-            <span className="brand-compact hidden font-display font-semibold text-lg">O</span>
+        <div className={`brand-header h-24 flex items-center border-b border-zinc-800 ${collapsed ? 'justify-center px-3' : 'justify-between px-6'}`}>
+          {collapsed ? (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="flex items-center justify-center font-display font-semibold text-lg text-white"
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+            >
+              OA
+            </button>
+          ) : (
+          <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 group" title="Oppverse AI">
             <div className="brand-copy">
-              <span className="font-display font-semibold text-lg tracking-tight text-white">
-                Oppverse
+              <span className="font-display font-semibold text-2xl tracking-tight text-white">
+                Oppverse AI
               </span>
-              <p className="text-[9px] uppercase font-semibold tracking-wider text-zinc-500 mt-0.5">
+              <p className="text-[9px] uppercase font-semibold tracking-wider text-zinc-500 mt-1">
                 Opportunity Intelligence
               </p>
             </div>
           </Link>
+          )}
+
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden lg:inline-flex icon-button !w-8 !h-8"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Close button for mobile drawer */}
           <button
@@ -58,8 +83,19 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation Items */}
-        <nav className="p-3 space-y-1">
-          <div className="nav-heading px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <nav className={`${collapsed ? 'px-3' : 'px-5'} py-8 space-y-2`}>
+          {collapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="icon-button !w-11 !h-11 mx-auto mb-5"
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          )}
+          <div className={`nav-heading px-3 pb-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500 ${collapsed ? 'sr-only' : ''}`}>
             Main Navigation
           </div>
           {navItems.map((item) => {
@@ -72,7 +108,7 @@ export default function Sidebar() {
                 href={item.href}
                 onClick={closeMobileMenu}
                 title={item.name}
-                className={`sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all border ${
+                className={`sidebar-link flex min-h-11 items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-3'} py-2.5 rounded-xl text-[13px] font-medium transition-all border ${
                   isActive
                     ? 'sidebar-link-active'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border-transparent'
@@ -80,15 +116,8 @@ export default function Sidebar() {
               >
                 <div className="flex items-center gap-3">
                   <Icon className={`icon-sm ${isActive ? 'text-white' : 'text-zinc-500'}`} />
-                  <span className="nav-label">{item.name}</span>
+                  {!collapsed && <span className="nav-label">{item.name}</span>}
                 </div>
-                {item.badge && (
-                  <span className={`nav-badge badge ${
-                    isActive ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-800 text-zinc-400'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -96,11 +125,18 @@ export default function Sidebar() {
       </div>
 
       {/* Profile Mini Status */}
-      <div className="profile-status p-4 border-t border-zinc-800">
+      <div className={`profile-status border-t border-zinc-800 ${collapsed ? 'p-3' : 'p-5'}`}>
+        {collapsed ? (
+          <div className="flex flex-col items-center">
+            <Link href="/profile" className="icon-button !w-10 !h-10" title="Profile strength: 88%" aria-label="Profile strength: 88%">
+              <Activity className="w-4 h-4" />
+            </Link>
+          </div>
+        ) : (
         <Link 
           href="/profile"
           onClick={closeMobileMenu}
-          className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 block transition-colors group"
+          className="profile-status-card p-4 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 block transition-colors group"
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-300 group-hover:text-white flex items-center gap-1.5">
@@ -116,6 +152,7 @@ export default function Sidebar() {
             Active: <span className="text-slate-300 font-medium">Product Marketing Lead</span>
           </p>
         </Link>
+        )}
       </div>
     </div>
   );
@@ -123,8 +160,8 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className="app-sidebar hidden lg:flex w-64 h-screen fixed left-0 top-0 glass-panel border-r border-zinc-800 flex-col justify-between z-40">
-        {sidebarContent}
+      <aside className={`app-sidebar hidden lg:flex ${isSidebarCollapsed ? 'w-20' : 'w-64'} h-screen fixed left-0 top-0 glass-panel border-r border-zinc-800 flex-col justify-between z-40 transition-[width] duration-200`}>
+        {sidebarContent(isSidebarCollapsed)}
       </aside>
 
       {/* Mobile Slide-Over Drawer with Backdrop */}
@@ -139,7 +176,7 @@ export default function Sidebar() {
 
           {/* Drawer Sidebar Content */}
           <div className="relative w-72 max-w-[85vw] h-full bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col shadow-2xl animate-fadeIn">
-            {sidebarContent}
+            {sidebarContent(false)}
           </div>
         </div>
       )}

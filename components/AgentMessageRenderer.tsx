@@ -229,13 +229,13 @@ function renderOpportunityBlock(blockText: string, blockIdx: number, onActionCli
       {items.map((item, iIdx) => (
         <div
           key={iIdx}
-          className="group relative p-4 rounded-xl bg-gradient-to-b from-zinc-900/90 to-zinc-950/90 border border-zinc-800 hover:border-zinc-700 transition-all duration-150 space-y-3"
+          className="opportunity-card group relative p-4 rounded-xl border transition-all duration-150 space-y-3"
         >
           {/* Header with Title & Provider */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5">
               {item.indexNumber && (
-                <span className="flex-shrink-0 w-5 h-5 rounded-md bg-zinc-800 border border-zinc-700/80 text-zinc-300 font-bold text-[10px] flex items-center justify-center mt-0.5">
+                <span className="flex-shrink-0 w-5 h-5 rounded-md bg-zinc-800 border border-zinc-700/80 text-zinc-300 font-semibold text-[10px] flex items-center justify-center mt-0.5">
                   {item.indexNumber}
                 </span>
               )}
@@ -253,7 +253,7 @@ function renderOpportunityBlock(blockText: string, blockIdx: number, onActionCli
 
             {/* Fit Badge */}
             {item.fitScore && (
-              <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[11px] font-semibold">
+              <div className="match-badge flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 <span>{item.fitScore}</span>
               </div>
@@ -263,14 +263,14 @@ function renderOpportunityBlock(blockText: string, blockIdx: number, onActionCli
           {/* Key Metrics Pill Badges */}
           <div className="flex flex-wrap items-center gap-2 pt-0.5">
             {item.funding && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 text-[11px] font-medium">
-                <Coins className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="metadata-chip flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium">
+                <Coins className="w-3.5 h-3.5" />
                 <span>{item.funding}</span>
               </div>
             )}
 
             {item.deadline && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[11px]">
+              <div className="metadata-chip flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px]">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
                 <span>Deadline: <strong className="text-zinc-100 font-medium">{item.deadline}</strong></span>
               </div>

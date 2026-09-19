@@ -9,8 +9,7 @@ import {
   ShieldCheck, 
   FileText, 
   Coins, 
-  ArrowRight,
-  Sparkles
+  ArrowRight
 } from 'lucide-react';
 import { Opportunity, UserProfile } from '@/lib/types';
 import { evaluateOpportunityMatch } from '@/lib/matching';

@@ -158,7 +158,7 @@ export default function ApplicationsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
             <div>
               <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                {activeApp.category} â€¢ {activeApp.provider}
+                {activeApp.category} • {activeApp.provider}
               </span>
               <h2 className="text-xl font-bold font-display text-white mt-1">
                 {activeApp.title}

@@ -13,8 +13,7 @@ import {
   ChevronDown, 
   ChevronUp, 
   ExternalLink,
-  Layers,
-  Sparkles
+  Layers
 } from 'lucide-react';
 import { Opportunity, OpportunityMatch, UserProfile } from '@/lib/types';
 
@@ -212,7 +211,7 @@ export default function MatchExplainer({
 
       {/* 6. Application Readiness Summary */}
       {match.readinessDetail && (
-        <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-2.5">
+        <div className="ranking-panel p-3.5 rounded-xl space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 font-semibold text-zinc-200 text-[11px]">
               <FileText className="w-3.5 h-3.5 text-zinc-400" />
@@ -223,7 +222,7 @@ export default function MatchExplainer({
 
           <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300"
+              className="progress-value transition-all duration-300"
               style={{ width: `${match.readinessScore}%` }}
             />
           </div>

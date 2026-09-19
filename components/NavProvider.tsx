@@ -1,18 +1,33 @@
 ﻿'use client';
 
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 
 interface NavContextValue {
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
   toggleMobileMenu: () => void;
   closeMobileMenu: () => void;
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
 }
 
 const NavContext = createContext<NavContextValue | null>(null);
 
 export function NavProvider({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    setIsSidebarCollapsed(localStorage.getItem('oppverse-sidebar-collapsed') === 'true');
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((previous) => {
+      const next = !previous;
+      localStorage.setItem('oppverse-sidebar-collapsed', String(next));
+      return next;
+    });
+  };
 
   const value = useMemo(
     () => ({
@@ -20,8 +35,10 @@ export function NavProvider({ children }: { children: React.ReactNode }) {
       setIsMobileMenuOpen,
       toggleMobileMenu: () => setIsMobileMenuOpen((prev) => !prev),
       closeMobileMenu: () => setIsMobileMenuOpen(false),
+      isSidebarCollapsed,
+      toggleSidebar,
     }),
-    [isMobileMenuOpen]
+    [isMobileMenuOpen, isSidebarCollapsed]
   );
 
   return <NavContext.Provider value={value}>{children}</NavContext.Provider>;

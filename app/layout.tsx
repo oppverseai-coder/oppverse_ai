@@ -1,8 +1,7 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
-import BottomNav from "@/components/BottomNav";
+import AppShell from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { NavProvider } from "@/components/NavProvider";
 
@@ -26,19 +25,13 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="flex min-h-screen">
         <ThemeProvider>
           <NavProvider>
             <Sidebar />
-            <div className="app-shell flex-1 ml-0 lg:ml-64 flex flex-col min-h-screen pb-16 lg:pb-0 w-full overflow-x-hidden">
-              <Header />
-              <main className="app-main flex-1 pt-20 px-4 sm:px-8 pb-12 overflow-y-auto max-w-7xl w-full mx-auto">
-                {children}
-              </main>
-              <BottomNav />
-            </div>
+            <AppShell>{children}</AppShell>
           </NavProvider>
         </ThemeProvider>
       </body>

@@ -20,12 +20,12 @@ export default function Header() {
   const [selectedPersonaId, setSelectedPersonaId] = useState(initialProfile.activePersonaId);
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { toggleMobileMenu } = useNav();
+  const { toggleMobileMenu, isSidebarCollapsed } = useNav();
 
   const activePersona = initialProfile.personas.find(p => p.id === selectedPersonaId) || initialProfile.personas[0];
 
   return (
-    <header className="app-header h-16 fixed top-0 right-0 left-0 lg:left-64 glass-panel border-b border-zinc-800 px-4 sm:px-8 flex items-center justify-between z-30 transition-all">
+    <header className={`app-header h-20 fixed top-0 right-0 left-0 ${isSidebarCollapsed ? 'lg:left-20' : 'lg:left-64'} px-4 sm:px-8 lg:px-10 flex items-center justify-between z-30 transition-all`}>
       {/* Left: Mobile Menu Toggle & Brand / Search Bar */}
       <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-lg">
         <button
@@ -38,16 +38,16 @@ export default function Header() {
         </button>
 
         <Link href="/" className="lg:hidden flex items-center gap-1.5 flex-shrink-0 mr-1 sm:mr-2">
-          <span className="font-display font-bold text-base text-white">Oppverse</span>
+          <span className="font-display font-bold text-base text-white">Oppverse AI</span>
         </Link>
 
         {/* Search Universe Bar */}
-        <div className="relative w-full">
+        <div className="header-search relative w-full">
           <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search opportunities..."
-            className="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs glass-input placeholder:text-zinc-600 focus:outline-none"
+            className="w-full pl-10 pr-3 py-2 rounded-xl text-xs glass-input placeholder:text-zinc-600 focus:outline-none"
           />
         </div>
       </div>

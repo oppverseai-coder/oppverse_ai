@@ -1,6 +1,21 @@
-# Oppverse AI — Project Reference & Assistant Guidelines
+﻿# Oppverse AI — Project Reference & Assistant Guidelines
 
 Oppverse is an AI-powered opportunity intelligence platform that continuously discovers, understands, ranks, and recommends personalized global opportunities (Jobs, Fellowships, Scholarships, Grants, Conferences, Travel, Accelerators) built around the individual.
+
+---
+
+## 🧠 Memory & Execution Logs Protocol (Mandatory)
+
+Two persistent state tracking files live at the project root and **MUST** be updated after every successful prompt execution:
+
+1. **[`MEMORY.md`](file:///C:/Projects/oppverse_ai/MEMORY.md):** 
+   - Contains a **detailed, deep technical breakdown** of the last action carried out.
+   - Documents modified files, component state, data structures, and immediate next steps.
+   - Overwritten/updated dynamically to always represent the latest system snapshot so state or changes can be traced or reversed cleanly.
+
+2. **[`LOGS.md`](file:///C:/Projects/oppverse_ai/LOGS.md):** 
+   - An **append-only chronological audit trail** summarizing every single prompt/action executed from project inception to completion.
+   - Format: `[YYYY-MM-DD HH:MM WAT] ACTION_TYPE | Scope: ... | Outcome: ...`
 
 ---
 
@@ -31,14 +46,16 @@ Before running any `git commit`, `git push`, or `vercel deploy`:
 
 ## 📁 Project Architecture & Key Documents
 
-- **[PRD.md](file:///c:/Projects/oppverse_ai/PRD.md):** Complete Oppverse Product Requirements Document (V1.0) — Product Thesis, 7 Major Engines, 16 Opportunity Categories, Explainable Matching, and Release Roadmap.
-- **[CLAUDE.md](file:///c:/Projects/oppverse_ai/CLAUDE.md):** This developer & assistant instruction guide.
+- **[`MEMORY.md`](file:///C:/Projects/oppverse_ai/MEMORY.md):** Detailed memory and state of the latest executed action.
+- **[`LOGS.md`](file:///C:/Projects/oppverse_ai/LOGS.md):** Chronological audit trail of all project actions.
+- **[`PRD.md`](file:///c:/Projects/oppverse_ai/PRD.md):** Complete Oppverse Product Requirements Document (V1.0) — Product Thesis, 7 Major Engines, 16 Opportunity Categories, Explainable Matching, and Release Roadmap.
+- **[`BUILD_PLAN.md`](file:///c:/Projects/oppverse_ai/BUILD_PLAN.md):** Technical implementation checklist and milestone roadmap.
 
 ---
 
 ## 🎯 Core Product Mechanics (Source of Truth)
 
-1. **One Profile $\rightarrow$ Opportunity Universe:** The user creates an Opportunity Profile once. Oppverse continuously searches for them.
+1. **One Profile -> Opportunity Universe:** The user creates an Opportunity Profile once. Oppverse continuously searches for them.
 2. **7 Major Engines:**
    - *Identity Engine* (Who are you)
    - *Goal Engine* (Where are you trying to go)

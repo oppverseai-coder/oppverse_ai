@@ -1,4 +1,4 @@
-import { UserProfile, Opportunity, Mission } from "./types";
+﻿import { UserProfile, Opportunity, Mission } from "./types";
 
 export const initialProfile: UserProfile = {
   id: "usr_tomide_001",
@@ -74,7 +74,7 @@ export const initialProfile: UserProfile = {
       name: "Tech Founder & Builder",
       role: "Founder & AI Systems Architect",
       headline: "Building AI-powered opportunity intelligence and productivity infrastructure",
-      targetUniverses: ["Grants", "Accelerators", "Competitions", "Fellowships"],
+      targetUniverses: ["Grants", "Accelerators", "Competitions", "Fellowships", "Conferences"],
       goals: [
         "Secure non-dilutive startup grants and accelerator backing",
         "Expand international investor & ecosystem network"
@@ -252,6 +252,55 @@ export const sampleOpportunities: Opportunity[] = [
     isFeatured: true,
     tags: ["United Nations", "Geneva", "Travel Grant", "AI Forum"],
     postedDate: "2026-09-15T08:00:00Z"
+  },
+  {
+    id: "opp_007",
+    title: "Web Summit Lisbon 2026 — Emerging Market Founder & Creator Fellowship",
+    provider: "Web Summit & Enterprise Ireland",
+    category: "Conferences",
+    subcategory: "Global Tech Summit",
+    summary: "Full conference VIP pass, exhibit booth access, investor match sessions, and €1,500 travel subsidy for top African & Global South innovators.",
+    description: "Join 70,000+ tech leaders, founders, and investors in Lisbon. Includes exclusive access to Venture & Mentor Hours, PMM roundtables, and VIP opening night.",
+    officialSourceUrl: "https://websummit.com/emerging-innovators-2026",
+    applicationUrl: "https://websummit.com/apply/scholarship",
+    deadline: "2026-10-12T23:59:59Z",
+    locationType: "Physical",
+    hostCountry: "Portugal",
+    hostCity: "Lisbon",
+    eligibleNationalities: ["All", "Nigeria", "African Countries", "Emerging Markets"],
+    fundingStatus: "Fully Funded",
+    fundingAmount: "Full VIP Pass (€1,850) + €1,500 Flight Grant",
+    applicationComplexity: "Moderate",
+    requiredDocuments: ["Founder/Practitioner Bio", "Product / Workflow Overview", "Passport Copy"],
+    experienceRequired: "2+ years in Tech, Product, or AI Innovation",
+    verificationStatus: "Verified",
+    isFeatured: true,
+    tags: ["Conferences", "Web Summit", "Lisbon", "Fully Funded", "AI & SaaS"],
+    postedDate: "2026-09-19T09:00:00Z"
+  },
+  {
+    id: "opp_008",
+    title: "Global AI & Time Intelligence World Congress 2026",
+    provider: "International AI Society & Vera Pax Research",
+    category: "Conferences",
+    subcategory: "AI Systems & Enterprise Tech",
+    summary: "Flagship global conference exploring autonomous workflow agents, time intelligence, and modern GTM architectures.",
+    description: "Featuring 200+ executive speakers from OpenAI, Anthropic, Google DeepMind, and fast-growing B2B SaaS startups. Special sponsored passes available for African practitioners.",
+    officialSourceUrl: "https://aiworldcongress.org/2026",
+    applicationUrl: "https://aiworldcongress.org/scholarships",
+    deadline: "2026-10-25T23:59:59Z",
+    locationType: "Hybrid",
+    hostCountry: "United States",
+    hostCity: "San Francisco / Virtual",
+    eligibleNationalities: ["All"],
+    fundingStatus: "Fully Funded",
+    fundingAmount: "Complimentary All-Access Pass ($1,499) + Virtual Access",
+    applicationComplexity: "Quick",
+    requiredDocuments: ["LinkedIn Profile", "Short Motivation (200 words)"],
+    experienceRequired: "Open to all technology professionals",
+    verificationStatus: "Verified",
+    tags: ["Conferences", "San Francisco", "AI Systems", "GTM"],
+    postedDate: "2026-09-19T11:00:00Z"
   }
 ];
 
@@ -282,13 +331,13 @@ export const sampleMissions: Mission[] = [
   },
   {
     id: "msn_03",
-    title: "International AI Conference Speaking (Funded)",
-    prompt: "Find calls for speakers on AI GTM, product growth, and agentic workflows with speaker travel stipend or accommodation.",
+    title: "International AI Conference Speaking & Funded Passes",
+    prompt: "Find calls for speakers and fully funded delegate conference passes for major European & US tech summits.",
     targetCategories: ["Speaking", "Conferences"],
     countries: ["Europe", "North America", "Middle East"],
     fundingPreference: "Fully Funded",
     isActive: true,
-    matchCount: 3,
+    matchCount: 4,
     lastRunAt: "2026-09-19T06:00:00Z",
     createdAt: "2026-09-05T09:30:00Z"
   }

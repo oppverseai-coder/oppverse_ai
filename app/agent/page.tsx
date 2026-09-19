@@ -1,18 +1,12 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { 
-  Bot, 
-  Sparkles, 
+  MessageSquareText,
   Send, 
-  User, 
-  ShieldCheck, 
-  Target, 
-  Briefcase, 
-  Clock, 
-  ExternalLink 
+  ArrowRight
 } from 'lucide-react';
-import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
+import AgentMessageRenderer from '@/components/AgentMessageRenderer';
 
 interface ChatMessage {
   id: string;
@@ -38,12 +32,13 @@ export default function AgentPage() {
     {
       id: "3",
       sender: "agent",
-      text: "Here are your highest-priority matches with upcoming deadlines:\n\n1. 🏛️ **Berlin AI & Emerging Tech Leadership Fellowship** (Bosch & Techstars)\n• Fit: 94% Match (Fully Funded: €4,200/mo + Flights + Housing)\n• Deadline: October 8, 2026\n\n2. 🎤 **AI Product Summit London (Call for Speakers)**\n• Fit: 89% Match (Keynote flights & VIP accommodation covered)\n• Deadline: September 30, 2026\n\n3. 💼 **Senior Product Marketing Manager (AI)** (Synthesia)\n• Fit: 91% Match (Remote global, $120k–$155k)\n• Deadline: October 15, 2026\n\nWould you like me to generate an application checklist for the Berlin Fellowship?",
+      text: "Here are your highest-priority matches with upcoming deadlines:\n\n1. **Berlin AI & Emerging Tech Leadership Fellowship** (Bosch & Techstars)\n• Fit: 94% Match (Fully Funded: €4,200/mo + Flights + Housing)\n• Deadline: October 8, 2026\n\n2. **AI Product Summit London (Call for Speakers)**\n• Fit: 89% Match (Keynote flights & VIP accommodation covered)\n• Deadline: September 30, 2026\n\n3. **Senior Product Marketing Manager (AI)** (Synthesia)\n• Fit: 91% Match (Remote global, $120k–$155k)\n• Deadline: October 15, 2026\n\nWould you like me to generate an application checklist for the Berlin Fellowship?",
       time: "9:01 AM"
     }
   ]);
 
   const [inputVal, setInputVal] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
   const quickPrompts = [
     "Find fully funded scholarships for Africans",
@@ -65,16 +60,24 @@ export default function AgentPage() {
 
     setMessages(prev => [...prev, userMsg]);
     if (!text) setInputVal('');
+    setIsTyping(true);
 
     setTimeout(() => {
+      let replyText = `Based on your verified Oppverse profile and current goals, I have analyzed our Opportunity Graph for "${messageToSend}". I found 4 matching verified opportunities with Nigerian eligibility active. All results are ranked without hallucinated criteria.`;
+
+      if (messageToSend.toLowerCase().includes('berlin') || messageToSend.toLowerCase().includes('checklist')) {
+        replyText = "Here is your custom preparation checklist for the **Berlin AI & Emerging Tech Leadership Fellowship**:\n\n• **Executive CV Update:** Tailor your experience toward AI systems and GTM leadership.\n• **Statement of Intent:** Emphasize your unique perspective leading emerging market AI products.\n• **2 Letters of Recommendation:** Request from senior engineering / executive collaborators.\n• **Pitch Deck / Portfolio:** Attach proof of shipped systems.\n\nWould you like me to create an active Workspace tracker for this fellowship?";
+      }
+
       const agentMsg: ChatMessage = {
         id: String(Date.now() + 1),
         sender: 'agent',
-        text: `Based on your verified Oppverse profile and current goals, I have analyzed our Opportunity Graph for "${messageToSend}". I found 4 matching verified opportunities with Nigerian eligibility active. All results are ranked without hallucinated criteria.`,
+        text: replyText,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, agentMsg]);
-    }, 800);
+      setIsTyping(false);
+    }, 700);
   };
 
   return (
@@ -82,13 +85,13 @@ export default function AgentPage() {
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-glow">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="icon-frame !w-10 !h-10 !flex-[0_0_40px]">
+            <MessageSquareText className="icon-md" />
           </div>
           <div>
             <h1 className="text-xl font-bold font-display text-white flex items-center gap-2">
               Oppverse AI Agent
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
             </h1>
             <p className="text-xs text-slate-400">Grounded in the Opportunity Graph • Zero Hallucinations</p>
           </div>
@@ -104,19 +107,30 @@ export default function AgentPage() {
           >
             {msg.sender === 'agent' && (
               <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center flex-shrink-0 text-cyan-400">
-                <Bot className="w-4 h-4" />
+                <MessageSquareText className="w-4 h-4" />
               </div>
             )}
 
             <div
-              className={`max-w-2xl p-4 rounded-2xl text-xs leading-relaxed ${
+              className={`max-w-2xl rounded-2xl transition-all ${
                 msg.sender === 'user'
-                  ? 'bg-indigo-600 text-white shadow-glow'
-                  : 'glass-panel border-slate-800 text-slate-200'
+                  ? 'bg-zinc-100 text-zinc-950 px-4 py-3 font-medium text-xs'
+                  : 'glass-panel border-slate-800 text-slate-200 p-4 text-xs leading-relaxed'
               }`}
             >
-              <p className="whitespace-pre-line">{msg.text}</p>
-              <span className="text-[10px] opacity-60 mt-2 block text-right">{msg.time}</span>
+              {msg.sender === 'user' ? (
+                <p className="whitespace-pre-line">{msg.text}</p>
+              ) : (
+                <AgentMessageRenderer 
+                  content={msg.text} 
+                  onActionClick={(actionText) => handleSend(actionText)} 
+                />
+              )}
+              <span className={`text-[10px] mt-2 block text-right ${
+                msg.sender === 'user' ? 'text-zinc-500' : 'opacity-60'
+              }`}>
+                {msg.time}
+              </span>
             </div>
 
             {msg.sender === 'user' && (
@@ -126,6 +140,18 @@ export default function AgentPage() {
             )}
           </div>
         ))}
+
+        {isTyping && (
+          <div className="flex gap-3 justify-start items-center">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center flex-shrink-0 text-cyan-400">
+              <MessageSquareText className="w-4 h-4" />
+            </div>
+            <div className="glass-panel border-slate-800 px-4 py-3 rounded-2xl text-slate-400 text-xs flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              <span className="text-[11px] text-slate-400">Analyzing Opportunity Graph...</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Prompt Suggestions & Input */}
@@ -135,7 +161,7 @@ export default function AgentPage() {
             <button
               key={i}
               onClick={() => handleSend(prompt)}
-              className="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-[11px] text-slate-400 hover:text-cyan-300 border border-slate-800 whitespace-nowrap transition-all"
+              className="btn btn-secondary !min-h-8 !px-3 whitespace-nowrap text-xs"
             >
               {prompt}
             </button>
@@ -153,7 +179,8 @@ export default function AgentPage() {
           />
           <button
             onClick={() => handleSend()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-glow hover:scale-105 transition-transform"
+            className="icon-button absolute right-2 top-1/2 -translate-y-1/2 !bg-zinc-100 !text-zinc-950 hover:!bg-white"
+            aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </button>

@@ -12,7 +12,6 @@ import {
   Trash2,
   Calendar,
   Layers,
-  Sparkles,
   ArrowRight
 } from 'lucide-react';
 import { sampleOpportunities } from '@/lib/sample-data';
@@ -101,20 +100,20 @@ export default function ApplicationsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-indigo-500 flex items-center justify-center shadow-glow">
-            <Briefcase className="w-6 h-6 text-white" />
+          <div className="icon-frame">
+            <Briefcase className="icon-md" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold font-display text-white">
+            <h1 className="page-title font-display">
               Application Workspace & Pipeline Tracker
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="page-description">
               Manage checklists, document requirements, and track outcomes from decision to win.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 bg-slate-900/90 px-3.5 py-2 rounded-xl border border-slate-800">
+        <div className="badge !min-h-8 !px-3">
           <span>Active Pipeline: <strong className="text-cyan-400">{apps.length} Opportunities</strong></span>
         </div>
       </div>
@@ -127,7 +126,7 @@ export default function ApplicationsPage() {
             <div key={status} className="glass-panel p-3.5 rounded-2xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-300">{status}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-bold">
+                <span className="badge !min-h-5 !px-1.5">
                   {statusApps.length}
                 </span>
               </div>
@@ -139,7 +138,7 @@ export default function ApplicationsPage() {
                     onClick={() => setSelectedAppId(app.id)}
                     className={`p-3 rounded-xl cursor-pointer text-xs transition-all border ${
                       app.id === selectedAppId
-                        ? 'bg-indigo-600/20 border-indigo-500/60 text-white shadow-glow'
+                        ? 'bg-zinc-800 border-zinc-600 text-white'
                         : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
                     }`}
                   >

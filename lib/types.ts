@@ -1,4 +1,4 @@
-export type OpportunityCategory = 
+﻿export type OpportunityCategory = 
   | "Jobs" 
   | "Fellowships" 
   | "Scholarships" 
@@ -113,6 +113,21 @@ export interface Opportunity {
   postedDate: string;
 }
 
+export interface SubScoreBreakdown {
+  categoryFit: number;
+  skillsFit: number;
+  seniorityFit: number;
+  financialFit: number;
+  logisticsFit: number;
+}
+
+export interface ReadinessDetail {
+  overallScore: number;
+  readyItems: string[];
+  missingItems: string[];
+  effortEstimate: ApplicationComplexity;
+}
+
 export interface OpportunityMatch {
   opportunityId: string;
   matchScore: number;
@@ -122,6 +137,8 @@ export interface OpportunityMatch {
   whyItMatches: string[];
   watchOuts: string[];
   readinessScore: number;
+  subScores?: SubScoreBreakdown;
+  readinessDetail?: ReadinessDetail;
   actionPriority: "Apply Now" | "Prepare This Week" | "Worth Exploring" | "Save for Later" | "Skip";
 }
 

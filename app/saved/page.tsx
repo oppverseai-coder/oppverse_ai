@@ -12,14 +12,14 @@ export default function SavedPage() {
     <div className="space-y-8 animate-fadeIn">
       <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-glow">
-            <Bookmark className="w-6 h-6 text-white" />
+          <div className="icon-frame">
+            <Bookmark className="icon-md" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold font-display text-white">
+            <h1 className="page-title font-display">
               Saved Opportunities ({savedOpps.length})
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="page-description">
               Opportunities you are considering for future applications.
             </p>
           </div>
@@ -43,7 +43,7 @@ export default function SavedPage() {
               </span>
               <Link
                 href="/applications"
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-xs shadow-glow flex items-center gap-1.5"
+                className="btn btn-primary"
               >
                 Pursue <ArrowRight className="w-3.5 h-3.5" />
               </Link>

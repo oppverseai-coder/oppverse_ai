@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { 
   Target, 
-  Sparkles, 
   Plus, 
   Play, 
   CheckCircle2, 
@@ -12,7 +11,7 @@ import {
   Zap, 
   Layers,
   ArrowRight,
-  Bot,
+  Search,
   Sliders
 } from 'lucide-react';
 import { sampleMissions, sampleOpportunities, initialProfile } from '@/lib/sample-data';
@@ -52,14 +51,14 @@ export default function MissionsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 flex items-center justify-center shadow-glow">
-            <Target className="w-6 h-6 text-white" />
+          <div className="icon-frame">
+            <Target className="icon-md" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold font-display text-white">
+            <h1 className="page-title font-display">
               My Missions (Autonomous Search Agents)
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="page-description">
               Persistent instructions to Oppverse to continuously hunt specific opportunities across the internet.
             </p>
           </div>
@@ -67,7 +66,7 @@ export default function MissionsPage() {
 
         <button
           onClick={() => setIsCreating(true)}
-          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-glow flex items-center gap-2 transition-all active:scale-95"
+          className="btn btn-primary"
         >
           <Plus className="w-4 h-4" /> Create Opportunity Mission
         </button>
@@ -75,10 +74,10 @@ export default function MissionsPage() {
 
       {/* Mission Creator Modal / Form */}
       {isCreating && (
-        <div className="glass-panel p-6 rounded-2xl border border-indigo-500/40 shadow-glow space-y-4 animate-fadeIn">
+        <div className="glass-panel p-6 rounded-2xl border border-zinc-700 space-y-4 animate-fadeIn">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Bot className="w-5 h-5 text-cyan-400" /> Create Persistent Opportunity Mission
+              <Search className="w-5 h-5 text-slate-400" /> Create Persistent Opportunity Mission
             </h3>
             <span className="text-xs text-slate-400">Runs autonomously 24/7</span>
           </div>
@@ -111,13 +110,13 @@ export default function MissionsPage() {
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               onClick={() => setIsCreating(false)}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              className="btn btn-secondary"
             >
               Cancel
             </button>
             <button
               onClick={handleCreateMission}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-xs shadow-glow"
+              className="btn btn-primary"
             >
               Activate Mission
             </button>
@@ -134,8 +133,8 @@ export default function MissionsPage() {
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Agent
+                <span className="badge badge-success">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active Agent
                 </span>
                 <span className="text-xs font-bold text-cyan-400 font-mono">
                   {mission.matchCount} Matches Found

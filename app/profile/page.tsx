@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { 
   User, 
   UploadCloud, 
-  Sparkles, 
+  CircleDot,
   ShieldCheck, 
-  Zap, 
+  Activity,
   Plus, 
   Trash2, 
   CheckCircle2, 
@@ -105,14 +105,14 @@ export default function ProfilePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-glow">
-              <User className="w-6 h-6 text-white" />
+            <div className="icon-frame">
+              <User className="icon-md" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-display text-white">
+              <h1 className="page-title font-display">
                 Opportunity Profile & Identity Engine
               </h1>
-              <p className="text-sm text-slate-400">
+              <p className="page-description">
                 One profile powers your entire personalized opportunity universe.
               </p>
             </div>
@@ -127,54 +127,54 @@ export default function ProfilePage() {
           )}
           <button
             onClick={handleSaveProfile}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-glow transition-all active:scale-95"
+            className="btn btn-primary"
           >
             Save Profile Changes
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
         {/* Left 2 Columns: Main Engine Tabs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Engine Tabs */}
-          <div className="flex items-center gap-2 p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800/80 overflow-x-auto">
+          <div className="tab-list">
             <button
               onClick={() => setActiveTab('personas')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`tab-button ${
                 activeTab === 'personas'
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-glow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  ? 'tab-button-active'
+                  : ''
               }`}
             >
               <Sliders className="w-3.5 h-3.5" /> Personas & Identity
             </button>
             <button
               onClick={() => setActiveTab('cv-upload')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`tab-button ${
                 activeTab === 'cv-upload'
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-glow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  ? 'tab-button-active'
+                  : ''
               }`}
             >
               <UploadCloud className="w-3.5 h-3.5" /> AI CV Ingestion
             </button>
             <button
               onClick={() => setActiveTab('universes')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`tab-button ${
                 activeTab === 'universes'
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-glow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  ? 'tab-button-active'
+                  : ''
               }`}
             >
               <Target className="w-3.5 h-3.5" /> Opportunity Universes
             </button>
             <button
               onClick={() => setActiveTab('experience')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`tab-button ${
                 activeTab === 'experience'
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-glow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  ? 'tab-button-active'
+                  : ''
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" /> Skills & Timeline
@@ -189,7 +189,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-cyan-400" /> Active Opportunity Personas
+                      <CircleDot className="w-4 h-4 text-zinc-400" /> Active Opportunity Personas
                     </h3>
                     <p className="text-xs text-slate-400">
                       Switch between your active professional identities to reshape your opportunity feed.
@@ -209,7 +209,7 @@ export default function ProfilePage() {
                         onClick={() => setProfile(prev => ({ ...prev, activePersonaId: persona.id }))}
                         className={`p-4 rounded-xl cursor-pointer transition-all border ${
                           isSelected
-                            ? 'bg-gradient-to-b from-indigo-600/20 to-slate-900 border-indigo-500/50 shadow-glow'
+                            ? 'bg-zinc-800 border-zinc-600'
                             : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
                         }`}
                       >
@@ -320,23 +320,23 @@ export default function ProfilePage() {
           {/* TAB 2: AI CV INGESTION */}
           {activeTab === 'cv-upload' && (
             <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-400" /> Fast-Track AI CV Parser
+                    <FileText className="w-5 h-5 text-zinc-400" /> Fast-Track AI CV Parser
                   </h3>
                   <p className="text-xs text-slate-400">
                     Paste your resume text or upload your CV to auto-populate your Oppverse Profile.
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+                <span className="badge">
                   Zero Hallucination
                 </span>
               </div>
 
               {/* Upload Dropzone */}
-              <div className="p-8 rounded-2xl border-2 border-dashed border-slate-700/80 hover:border-indigo-500/50 bg-slate-900/40 text-center transition-all">
-                <UploadCloud className="w-10 h-10 text-indigo-400 mx-auto mb-3 animate-pulse" />
+              <div className="dropzone">
+                <UploadCloud className="w-8 h-8 text-zinc-400 mx-auto mb-3" />
                 <p className="text-sm font-semibold text-white">Drag & drop your CV (PDF or DOCX)</p>
                 <p className="text-xs text-slate-500 mt-1">or paste your resume text below for instant AI extraction</p>
               </div>
@@ -362,9 +362,9 @@ export default function ProfilePage() {
                 <button
                   onClick={handleParseCV}
                   disabled={isParsing}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-glow flex items-center gap-2 transition-all disabled:opacity-50"
+                  className="btn btn-primary disabled:opacity-50"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <FileText className="w-4 h-4" />
                   {isParsing ? 'Extracting with Oppverse AI...' : 'Extract & Populate Profile'}
                 </button>
               </div>
@@ -402,7 +402,7 @@ export default function ProfilePage() {
                       onClick={() => handleUniverseToggle(category)}
                       className={`p-3.5 rounded-xl text-left border transition-all flex items-center justify-between ${
                         isChecked
-                          ? 'bg-indigo-600/20 border-indigo-500/50 text-white shadow-glow'
+                          ? 'bg-zinc-800 border-zinc-600 text-white'
                           : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                       }`}
                     >
@@ -469,7 +469,7 @@ export default function ProfilePage() {
                   />
                   <button
                     onClick={handleAddSkill}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+                    className="btn btn-secondary"
                   >
                     Add Skill
                   </button>
@@ -502,28 +502,28 @@ export default function ProfilePage() {
         {/* Right 1 Column: Profile Strength & Explanations */}
         <div className="space-y-6">
           {/* Profile Strength Card */}
-          <div className="glass-panel p-6 rounded-2xl border border-indigo-500/30 shadow-glow relative overflow-hidden">
+          <div className="insight-panel relative overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-amber-400" />
+                <Activity className="w-4 h-4 text-slate-400" />
                 Profile Strength
               </span>
-              <span className="text-xl font-display font-extrabold text-cyan-400">
+              <span className="stat-value font-display">
                 {profile.profileStrength}%
               </span>
             </div>
 
-            <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mb-4">
+            <div className="progress-track mb-5">
               <div 
-                className="bg-gradient-to-r from-indigo-500 via-indigo-400 to-cyan-400 h-full rounded-full transition-all duration-500" 
+                className="progress-value transition-all duration-500"
                 style={{ width: `${profile.profileStrength}%` }}
               />
             </div>
 
             {/* Explainable Value Insight */}
-            <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-xs text-slate-300 space-y-2">
+            <div className="border-t border-slate-800 pt-4 text-xs text-slate-300 space-y-2">
               <p className="font-bold text-white flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Why Completeness Matters
+                <CircleDot className="w-3.5 h-3.5 text-zinc-400" /> Why Completeness Matters
               </p>
               <p className="text-[11px] text-slate-300 leading-relaxed">
                 Adding your exact citizenship eliminates <span className="text-cyan-300 font-semibold">90%+ of ineligibility frustrations</span> before you ever spend time applying.
@@ -551,17 +551,17 @@ export default function ProfilePage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+          <div className="insight-panel space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Identity Graph Stats
             </h4>
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <span className="text-lg font-bold text-white">{profile.skills.length}</span>
+              <div className="stat-tile">
+                <span className="stat-value">{profile.skills.length}</span>
                 <p className="text-[11px] text-slate-400">Verified Skills</p>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <span className="text-lg font-bold text-cyan-400">{profile.selectedUniverses.length}</span>
+              <div className="stat-tile">
+                <span className="stat-value">{profile.selectedUniverses.length}</span>
                 <p className="text-[11px] text-slate-400">Active Universes</p>
               </div>
             </div>

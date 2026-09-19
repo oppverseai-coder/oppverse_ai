@@ -1,4 +1,4 @@
-# OPPVERSE AI — MASTER BUILD PLAN & TECHNICAL ROADMAP
+﻿# OPPVERSE AI â€” MASTER BUILD PLAN & TECHNICAL ROADMAP
 **Product:** Oppverse AI (AI Opportunity Intelligence Platform)  
 **Version:** 1.0  
 **Founder / Product Lead:** Tomide Williams  
@@ -9,7 +9,7 @@
 
 ---
 
-## 🏛️ 1. ARCHITECTURE & TECH STACK
+## ðŸ›ï¸ 1. ARCHITECTURE & TECH STACK
 
 | Layer | Technology | Rationale |
 | :--- | :--- | :--- |
@@ -23,7 +23,7 @@
 
 ---
 
-## 🗄️ 2. DATABASE SCHEMA DESIGN (Supabase PostgreSQL)
+## ðŸ—„ï¸ 2. DATABASE SCHEMA DESIGN (Supabase PostgreSQL)
 
 ```sql
 -- 1. PROFILES & PERSONAS
@@ -66,7 +66,7 @@ create table public.opportunities (
   host_country text,
   eligible_countries text[] default '{}', -- ['Nigeria', 'Ghana', 'All', etc.]
   funding_status text not null, -- 'Fully Funded', 'Partially Funded', 'Paid', 'Unpaid', 'Grant Award'
-  funding_amount text, -- e.g. "$50,000" or "Tuition + £1,500/mo stipend"
+  funding_amount text, -- e.g. "$50,000" or "Tuition + Â£1,500/mo stipend"
   application_complexity text default 'Moderate', -- 'Quick', 'Moderate', 'Heavy'
   required_documents text[] default '{}', -- ['CV', 'Motivation Letter', 'References']
   experience_required text,
@@ -125,26 +125,26 @@ create table public.applications (
 
 ---
 
-## 🚀 3. STEP-BY-STEP PHASED EXECUTION ROADMAP
+## ðŸš€ 3. STEP-BY-STEP PHASED EXECUTION ROADMAP
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           OPPVERSE BUILD JOURNEY                            │
-├───────────────┬─────────────────────────────────────────────────────────────┤
-│ Phase 0       │ Project Scaffold, UI Design Tokens, Supabase DB & Auth     │
-│ Phase 1       │ Profile Onboarding, CV AI Parsing & Persona Engine          │
-│ Phase 2       │ Opportunity Database & Ingestion Engine (MVP 6 Categories)  │
-│ Phase 3       │ Explainable Matching & Strict Eligibility Engine            │
-│ Phase 4       │ Home Universe, Daily Brief & Category Shelves               │
-│ Phase 5       │ Autonomous "My Missions" & Oppverse AI Chat Advisor         │
-│ Phase 6       │ Application Workspace, Document Vault & Pipeline Tracker    │
-│ Phase 7       │ Polish, Security, Multi-Account Verification & Deployment   │
-└───────────────┴─────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                           OPPVERSE BUILD JOURNEY                            â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ Phase 0       â”‚ Project Scaffold, UI Design Tokens, Supabase DB & Auth     â”‚
+â”‚ Phase 1       â”‚ Profile Onboarding, CV AI Parsing & Persona Engine          â”‚
+â”‚ Phase 2       â”‚ Opportunity Database & Ingestion Engine (MVP 6 Categories)  â”‚
+â”‚ Phase 3       â”‚ Explainable Matching & Strict Eligibility Engine            â”‚
+â”‚ Phase 4       â”‚ Home Universe, Daily Brief & Category Shelves               â”‚
+â”‚ Phase 5       â”‚ Autonomous "My Missions" & Oppverse AI Chat Advisor         â”‚
+â”‚ Phase 6       â”‚ Application Workspace, Document Vault & Pipeline Tracker    â”‚
+â”‚ Phase 7       â”‚ Polish, Security, Multi-Account Verification & Deployment   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
 
-### 🔹 PHASE 0: Foundations, App Shell & Supabase Setup
+### ðŸ”¹ PHASE 0: Foundations, App Shell & Supabase Setup
 - [ ] **Step 0.1: Initialize Next.js Project**
   - Scaffold Next.js 14 App Router project with TypeScript and Tailwind CSS in `C:\Projects\oppverse_ai`.
   - Install dependencies: `@supabase/supabase-js`, `@supabase/ssr`, `lucide-react`, `framer-motion`, `clsx`, `tailwind-merge`.
@@ -164,7 +164,7 @@ create table public.applications (
 
 ---
 
-### 🔹 PHASE 1: Opportunity Profile & Identity Engine
+### ðŸ”¹ PHASE 1: Opportunity Profile & Identity Engine
 - [ ] **Step 1.1: CV Upload & AI Extraction API**
   - Build API route `/api/profile/parse-cv` using AI structured JSON output.
   - Extract skills, employment history, degrees, citizenship, languages, and achievements into standard JSON.
@@ -173,58 +173,58 @@ create table public.applications (
   - Step 2: Confirm extracted data (Skills tags, Experience timeline).
   - Step 3: Opportunity Universe preferences (Jobs, Fellowships, Scholarships, Grants, Conferences, Travel).
 - [ ] **Step 1.3: Explainable Profile Strength Meter**
-  - Visual widget calculating profile completeness (e.g., *"78% Strength — Add your nationality to unlock scholarship eligibility checks"*).
+  - Visual widget calculating profile completeness (e.g., *"78% Strength â€” Add your nationality to unlock scholarship eligibility checks"*).
 - [ ] **Step 1.4: Multi-Persona Support**
   - Allow switching between Personas (e.g. *Tomide the PMM* vs *Tomide the Founder* vs *Tomide the Speaker*).
 
 ---
 
-### 🔹 PHASE 2: Discovery Engine & Curated Opportunity DB
+### ðŸ”¹ PHASE 2: Discovery Engine & Curated Opportunity DB
 - [ ] **Step 2.1: Ingestion & Seed Data Suite**
   - Create a benchmark dataset of 50+ real, verified high-impact opportunities across:
-    - 💼 **Jobs:** Global remote AI, product, and tech roles hiring from Africa.
-    - 🎓 **Scholarships:** Fully funded Master's/PhD (Chevening, DAAD, Mastercard Foundation, Commonwealth).
-    - 🏛️ **Fellowships:** Leadership and tech fellowships (Obama Foundation, Echoing Green, Techstars).
-    - 💰 **Grants:** Non-dilutive startup and research grants (Tony Elumelu, Google for Startups Africa).
-    - ✈️ **Travel Opportunities:** Fully funded conferences & summit speaker grants.
-    - 🚀 **Accelerators:** Early-stage startup programs (Y Combinator, Techstars, ARM Labs).
+    - ðŸ’¼ **Jobs:** Global remote AI, product, and tech roles hiring from Africa.
+    - ðŸŽ“ **Scholarships:** Fully funded Master's/PhD (Chevening, DAAD, Mastercard Foundation, Commonwealth).
+    - ðŸ›ï¸ **Fellowships:** Leadership and tech fellowships (Obama Foundation, Echoing Green, Techstars).
+    - ðŸ’° **Grants:** Non-dilutive startup and research grants (Tony Elumelu, Google for Startups Africa).
+    - âœˆï¸ **Travel Opportunities:** Fully funded conferences & summit speaker grants.
+    - ðŸš€ **Accelerators:** Early-stage startup programs (Y Combinator, Techstars, ARM Labs).
 - [ ] **Step 2.2: Discover & Search Page UI**
   - Category filters, country eligibility dropdown, funding pill filters (`Fully Funded`, `Partial`, `Paid`).
   - Opportunity Card component with deadline badges and verification tags (`Verified`, `Recently Checked`).
 
 ---
 
-### 🔹 PHASE 3: Explainable Matching Engine
-- [ ] **Step 3.1: Strict Eligibility Engine**
+### ðŸ”¹ PHASE 3: Explainable Matching Engine
+- [x] **Step 3.1: Strict Eligibility Engine**
   - Compare user profile (`citizenship`, `experience`, `education`) against opportunity criteria.
   - Immediately flag `Not Eligible` with plain-English reasons if restricted (zero false hopes).
   - Handle ambiguous criteria as `Eligibility Unclear` + `[Check Official Source]`.
-- [ ] **Step 3.2: Fit Scoring & Match Labels**
+- [x] **Step 3.2: Fit Scoring & Match Labels**
   - Algorithmic scoring evaluating: Relevance, Goal Alignment, Financial Fit, Experience Fit.
   - Output labels: `Exceptional Match`, `Strong Match`, `Good Match`, `Worth Exploring`.
-- [ ] **Step 3.3: "Why This Matches You" Card Component**
+- [x] **Step 3.3: "Why This Matches You" Card Component**
   - Display 3 core reasons why the opportunity fits the user.
   - Display watch-outs (e.g., *"Requires 2 references"*, *"Closing in 5 days"*).
   - Display estimated application effort (`Quick`, `Moderate`, `Heavy`).
 
 ---
 
-### 🔹 PHASE 4: Home Universe & Daily Opportunity Brief
-- [ ] **Step 4.1: Daily Opportunity Brief Hero**
+### ðŸ”¹ PHASE 4: Home Universe & Daily Opportunity Brief
+- [x] **Step 4.1: Daily Opportunity Brief Hero**
   - Personalized morning greeting: *"Good morning, Tomide. 24 new opportunities discovered. 3 Strong Matches for you today."*
   - Interactive Action Cards: `[View Match]`, `[Save]`, `[Dismiss]`.
-- [ ] **Step 4.2: Curated Feed Shelves**
-  - ⭐ **Best Matches** (Highest overall fit score)
-  - 🆕 **New Today** (Fresh opportunities added within 24h)
-  - ⏳ **Closing Soon** (Deadlines within 14 days)
-  - 💎 **Fully Funded** (100% covered programs)
-  - 🎲 **You Didn't Search for This, But...** (Serendipitous discovery)
-- [ ] **Step 4.3: Opportunity Detail Modal / Drawer**
+- [x] **Step 4.2: Curated Feed Shelves**
+  - â­ **Best Matches** (Highest overall fit score)
+  - ðŸ†• **New Today** (Fresh opportunities added within 24h)
+  - â³ **Closing Soon** (Deadlines within 14 days)
+  - ðŸ’Ž **Fully Funded** (100% covered programs)
+  - ðŸŽ² **You Didn't Search for This, But...** (Serendipitous discovery)
+- [x] **Step 4.3: Opportunity Detail Modal / Drawer**
   - Full opportunity intelligence: Overview, Benefits, Requirements checklist, Readiness meter (`75% Ready`), and `Pursue Opportunity` button.
 
 ---
 
-### 🔹 PHASE 5: My Missions & Oppverse AI Assistant
+### ðŸ”¹ PHASE 5: My Missions & Oppverse AI Assistant
 - [ ] **Step 5.1: "My Missions" (Autonomous Agents)**
   - UI to create persistent opportunity missions (e.g., *"Find fully funded AI fellowships for Nigerians"*).
   - Live feed stream filtered strictly by each mission's criteria.
@@ -237,7 +237,7 @@ create table public.applications (
 
 ---
 
-### 🔹 PHASE 6: Application Workspace & Pipeline Tracker
+### ðŸ”¹ PHASE 6: Application Workspace & Pipeline Tracker
 - [ ] **Step 6.1: Application Workspace**
   - When clicking `Pursue Opportunity`, generate an active Workspace.
   - Auto-generated checklist items (`Update CV`, `Draft Statement of Purpose`, `Request Reference`).
@@ -250,7 +250,7 @@ create table public.applications (
 
 ---
 
-### 🔹 PHASE 7: QA, Security Polish & Production Deployment
+### ðŸ”¹ PHASE 7: QA, Security Polish & Production Deployment
 - [ ] **Step 7.1: Pre-Flight Account Isolation Audit**
   - Verify Git remote points strictly to `https://github.com/oppverseai-coder`.
   - Verify commit author is `oppverseai@gmail.com`.
@@ -263,7 +263,7 @@ create table public.applications (
 
 ---
 
-## 🎯 IMMEDIATE NEXT ACTION (STARTING PHASE 0)
+## ðŸŽ¯ IMMEDIATE NEXT ACTION (STARTING PHASE 0)
 
 We will now immediately proceed with **Phase 0**:
 1. Initialize the Next.js frontend with Tailwind CSS and dependencies inside `C:\Projects\oppverse_ai`.

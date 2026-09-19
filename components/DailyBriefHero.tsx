@@ -22,7 +22,9 @@ import { evaluateOpportunityMatch } from '@/lib/matching';
 interface DailyBriefHeroProps {
   profile: UserProfile;
   opportunities: Opportunity[];
-  onSelectOpportunity: (opp: Opportunity) => void;
+  onSelectOpportunity?: (opp: Opportunity) => void;
+  onInspect?: (opp: Opportunity) => void;
+  onPursue?: (opp: Opportunity) => void;
   onToggleSave: (oppId: string, e: React.MouseEvent) => void;
   savedOppIds: string[];
 }
@@ -31,10 +33,14 @@ export default function DailyBriefHero({
   profile,
   opportunities,
   onSelectOpportunity,
+  onInspect,
+  onPursue,
   onToggleSave,
   savedOppIds,
 }: DailyBriefHeroProps) {
   const [isDismissed, setIsDismissed] = useState(false);
+
+  const handleSelect = onInspect || onSelectOpportunity || (() => {});
 
   // Evaluate all opportunities against active profile
   const evaluated = opportunities.map(opp => ({
@@ -178,7 +184,7 @@ export default function DailyBriefHero({
                 </button>
 
                 <button
-                  onClick={() => onSelectOpportunity(spotlight.opp)}
+                  onClick={() => handleSelect(spotlight.opp)}
                   className="btn btn-primary !min-h-8 sm:!min-h-9 !px-3.5 text-xs flex-1 sm:flex-none justify-center"
                 >
                   <span>View Match Intelligence</span>

@@ -1,10 +1,11 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --font-inter: "Inter";
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-display: 'Sora', 'Inter', system-ui, sans-serif;
     --background: #0a0a0a;
     --surface: #101010;
     --surface-raised: #151515;
@@ -70,7 +71,7 @@
     min-height: 100vh;
     background: var(--background);
     color: var(--text-primary);
-    font-family: var(--font-inter), sans-serif;
+    font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-size: 14px;
@@ -441,7 +442,7 @@
 
 /* V2 component normalization for existing screens. These selectors preserve
    structure while making legacy utility combinations read as one system. */
-.font-display { font-family: var(--font-inter), sans-serif !important; letter-spacing: 0 !important; }
+.font-display { font-family: var(--font-display) !important; letter-spacing: -0.01em !important; }
 .tracking-tight { letter-spacing: 0 !important; }
 .tracking-wider { letter-spacing: 0.055em !important; }
 .font-extrabold { font-weight: 650 !important; }
@@ -690,3 +691,4 @@ select option {
     line-height: 1.35;
   }
 }
+

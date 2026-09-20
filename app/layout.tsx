@@ -4,9 +4,10 @@ import Sidebar from "@/components/Sidebar";
 import AppShell from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { NavProvider } from "@/components/NavProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 
 export const metadata: Metadata = {
-  title: "Oppverse.ai — Your AI Opportunity Intelligence Platform",
+  title: "Oppverse.ai - Your AI Opportunity Intelligence Platform",
   description: "One profile. A universe of personalized jobs, fellowships, scholarships, grants, and speaking opportunities that find you.",
 };
 
@@ -28,12 +29,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="flex min-h-screen">
-        <ThemeProvider>
-          <NavProvider>
-            <Sidebar />
-            <AppShell>{children}</AppShell>
-          </NavProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <NavProvider>
+              <Sidebar />
+              <AppShell>{children}</AppShell>
+            </NavProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,12 +1,12 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   UploadCloud, 
   CircleDot,
   ShieldCheck, 
-  Activity,
+  Activity, 
   Plus, 
   Trash2, 
   CheckCircle2, 
@@ -19,19 +19,40 @@ import {
   ChevronRight,
   FileText,
   AlertCircle,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { initialProfile as sampleProfile } from '@/lib/sample-data';
 import { UserProfile, OpportunityCategory, Persona } from '@/lib/types';
+import { useAuth } from '@/components/AuthProvider';
+import { fetchUserProfile, updateUserProfile } from '@/lib/supabase/db';
 
 export default function ProfilePage() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(sampleProfile);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'personas' | 'cv-upload' | 'universes' | 'experience'>('personas');
   const [cvInputText, setCvInputText] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [parseSuccess, setParseSuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [newSkill, setNewSkill] = useState('');
+
+  useEffect(() => {
+    async function loadProfile() {
+      setLoading(true);
+      try {
+        const data = await fetchUserProfile(user?.id);
+        if (data) setProfile(data);
+      } catch (err) {
+        console.warn('Error fetching profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProfile();
+  }, [user?.id]);
 
   const allUniverses: OpportunityCategory[] = [
     'Jobs', 
@@ -46,10 +67,11 @@ export default function ProfilePage() {
   ];
 
   const handleUniverseToggle = (cat: OpportunityCategory) => {
-    const exists = profile.selectedUniverses.includes(cat);
+    const universes = profile.selectedUniverses || [];
+    const exists = universes.includes(cat);
     const updated = exists 
-      ? profile.selectedUniverses.filter(c => c !== cat)
-      : [...profile.selectedUniverses, cat];
+      ? universes.filter(c => c !== cat)
+      : [...universes, cat];
     
     setProfile(prev => ({ ...prev, selectedUniverses: updated }));
   };
@@ -93,12 +115,22 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSaveProfile = () => {
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      if (user?.id) {
+        await updateUserProfile(user.id, profile);
+      }
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.warn('Error saving profile:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const activePersona = profile.personas.find(p => p.id === profile.activePersonaId) || profile.personas[0];
+  const activePersona = profile.personas?.find(p => p.id === profile.activePersonaId) || profile.personas?.[0] || sampleProfile.personas[0];
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -128,9 +160,10 @@ export default function ProfilePage() {
           )}
           <button
             onClick={handleSaveProfile}
-            className="btn btn-primary"
+            disabled={isSaving}
+            className="btn btn-primary disabled:opacity-50"
           >
-            Save Profile Changes
+            {isSaving ? 'Saving...' : 'Save Profile Changes'}
           </button>
         </div>
       </div>
@@ -197,12 +230,12 @@ export default function ProfilePage() {
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
-                    {profile.personas.length} Active Personas
+                    {(profile.personas || []).length} Active Personas
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {profile.personas.map((persona) => {
+                  {(profile.personas || []).map((persona) => {
                     const isSelected = persona.id === profile.activePersonaId;
                     return (
                       <div
@@ -221,10 +254,10 @@ export default function ProfilePage() {
                           {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
                         </div>
                         <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                          {persona.headline}
+                          {persona.headline || persona.role}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-1">
-                          {persona.targetUniverses.slice(0, 2).map((u, i) => (
+                          {(persona.targetUniverses || (persona as any).targetCategories || ['Jobs', 'Fellowships']).slice(0, 2).map((u: string, i: number) => (
                             <span key={i} className="text-[9px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 font-medium">
                               {u}
                             </span>
@@ -247,7 +280,7 @@ export default function ProfilePage() {
                     <label className="text-xs font-semibold text-slate-300 mb-1.5 block">Full Legal Name</label>
                     <input
                       type="text"
-                      value={profile.fullName}
+                      value={profile.fullName || ''}
                       onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
                       className="w-full p-2.5 rounded-xl glass-input text-sm"
                     />
@@ -256,7 +289,7 @@ export default function ProfilePage() {
                     <label className="text-xs font-semibold text-slate-300 mb-1.5 block">Email Address</label>
                     <input
                       type="email"
-                      value={profile.email}
+                      value={profile.email || ''}
                       onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                       className="w-full p-2.5 rounded-xl glass-input text-sm"
                     />
@@ -267,7 +300,7 @@ export default function ProfilePage() {
                     </label>
                     <input
                       type="text"
-                      value={profile.citizenship.join(', ')}
+                      value={(profile.citizenship || []).join(', ')}
                       onChange={(e) => setProfile({ ...profile, citizenship: e.target.value.split(',').map(s => s.trim()) })}
                       placeholder="e.g. Nigeria, Ghana"
                       className="w-full p-2.5 rounded-xl glass-input text-sm border-indigo-500/40"
@@ -277,7 +310,7 @@ export default function ProfilePage() {
                     <label className="text-xs font-semibold text-slate-300 mb-1.5 block">Country & City of Residence</label>
                     <input
                       type="text"
-                      value={`${profile.city}, ${profile.countryOfResidence}`}
+                      value={`${profile.city || ''}, ${profile.countryOfResidence || ''}`}
                       onChange={(e) => {
                         const parts = e.target.value.split(',');
                         setProfile({
@@ -293,7 +326,7 @@ export default function ProfilePage() {
                     <label className="text-xs font-semibold text-slate-300 mb-1.5 block">Years of Professional Experience</label>
                     <input
                       type="number"
-                      value={profile.yearsOfExperience}
+                      value={profile.yearsOfExperience || 0}
                       onChange={(e) => setProfile({ ...profile, yearsOfExperience: parseInt(e.target.value) || 0 })}
                       className="w-full p-2.5 rounded-xl glass-input text-sm"
                     />
@@ -301,13 +334,13 @@ export default function ProfilePage() {
                   <div>
                     <label className="text-xs font-semibold text-slate-300 mb-1.5 block">Career Seniority Level</label>
                     <select
-                      value={profile.careerLevel}
+                      value={profile.careerLevel || 'Mid-Career'}
                       onChange={(e: any) => setProfile({ ...profile, careerLevel: e.target.value })}
                       className="w-full p-2.5 rounded-xl glass-input text-sm"
                     >
-                      <option value="Early-Career">Early-Career (0–3 yrs)</option>
-                      <option value="Mid-Career">Mid-Career (3–6 yrs)</option>
-                      <option value="Senior">Senior (6–10 yrs)</option>
+                      <option value="Early-Career">Early-Career (0â€“3 yrs)</option>
+                      <option value="Mid-Career">Mid-Career (3â€“6 yrs)</option>
+                      <option value="Senior">Senior (6â€“10 yrs)</option>
                       <option value="Executive">Executive / Director (10+ yrs)</option>
                       <option value="Founder">Founder / Venture Builder</option>
                       <option value="Student">Student / Graduate</option>
@@ -375,7 +408,7 @@ export default function ProfilePage() {
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                   <div>
                     <p className="font-bold">Extraction Successful!</p>
-                    <p className="text-emerald-400/80">Extracted 8 core skills, 2 past roles, and your verified qualifications.</p>
+                    <p className="text-emerald-400/80">Extracted verified skills, past roles, and your verified qualifications.</p>
                   </div>
                 </div>
               )}
@@ -396,7 +429,7 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {allUniverses.map((category) => {
-                  const isChecked = profile.selectedUniverses.includes(category);
+                  const isChecked = (profile.selectedUniverses || []).includes(category);
                   return (
                     <button
                       key={category}
@@ -420,7 +453,7 @@ export default function ProfilePage() {
                   Target Aspirations & Goals
                 </h4>
                 <div className="space-y-2">
-                  {profile.goals.map((goal, idx) => (
+                  {(profile.goals || []).map((goal, idx) => (
                     <div key={idx} className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 text-xs text-slate-200 flex items-center justify-between">
                       <span>{goal}</span>
                       <button 
@@ -446,7 +479,7 @@ export default function ProfilePage() {
                 </h3>
 
                 <div className="flex flex-wrap gap-2">
-                  {profile.skills.map((skill) => (
+                  {(profile.skills || []).map((skill) => (
                     <span
                       key={skill}
                       className="px-3 py-1.5 rounded-xl bg-slate-800/90 text-cyan-300 border border-slate-700 text-xs font-medium flex items-center gap-2"
@@ -490,13 +523,13 @@ export default function ProfilePage() {
                 </h3>
 
                 <div className="space-y-3">
-                  {profile.workHistory.map((work, idx) => (
+                  {(profile.workHistory || []).map((work, idx) => (
                     <div key={idx} className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-white text-sm">{work.role}</span>
-                        <span className="text-[11px] text-slate-400">{work.startDate} — {work.endDate}</span>
+                        <span className="text-[11px] text-slate-400">{work.startDate} â€” {work.endDate}</span>
                       </div>
-                      <p className="text-xs text-cyan-400 font-medium">{work.company} • {work.location}</p>
+                      <p className="text-xs text-cyan-400 font-medium">{work.company} â€¢ {work.location}</p>
                       <p className="text-xs text-slate-400 pt-1 leading-relaxed">{work.description}</p>
                     </div>
                   ))}
@@ -516,14 +549,14 @@ export default function ProfilePage() {
                 Profile Strength
               </span>
               <span className="stat-value font-display">
-                {profile.profileStrength}%
+                {profile.profileStrength || 88}%
               </span>
             </div>
 
             <div className="progress-track mb-5">
               <div 
                 className="progress-value transition-all duration-500"
-                style={{ width: `${profile.profileStrength}%` }}
+                style={{ width: `${profile.profileStrength || 88}%` }}
               />
             </div>
 
@@ -548,7 +581,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-start gap-2 text-xs text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <span>3 Active Personas configured</span>
+                <span>Active Personas configured</span>
               </div>
               <div className="flex items-start gap-2 text-xs text-slate-300">
                 <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -564,11 +597,11 @@ export default function ProfilePage() {
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="stat-tile">
-                <span className="stat-value">{profile.skills.length}</span>
+                <span className="stat-value">{(profile.skills || []).length}</span>
                 <p className="text-[11px] text-slate-400">Verified Skills</p>
               </div>
               <div className="stat-tile">
-                <span className="stat-value">{profile.selectedUniverses.length}</span>
+                <span className="stat-value">{(profile.selectedUniverses || []).length}</span>
                 <p className="text-[11px] text-slate-400">Active Universes</p>
               </div>
             </div>

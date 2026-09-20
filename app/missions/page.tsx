@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Target, 
   Plus, 
@@ -12,22 +12,44 @@ import {
   Layers,
   ArrowRight,
   Search,
-  Sliders
+  Sliders,
+  Loader2
 } from 'lucide-react';
-import { sampleMissions, sampleOpportunities, initialProfile } from '@/lib/sample-data';
+import { sampleMissions } from '@/lib/sample-data';
 import { Mission } from '@/lib/types';
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthProvider';
+import { fetchUserMissions, saveUserMission } from '@/lib/supabase/db';
 
 export default function MissionsPage() {
+  const { user } = useAuth();
   const [missions, setMissions] = useState<Mission[]>(sampleMissions);
+  const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newPrompt, setNewPrompt] = useState('');
   const [newTitle, setNewTitle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCreateMission = () => {
+  useEffect(() => {
+    async function loadMissions() {
+      setLoading(true);
+      try {
+        const data = await fetchUserMissions(user?.id);
+        if (data && data.length > 0) setMissions(data);
+      } catch (e) {
+        console.warn('Error loading missions:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMissions();
+  }, [user?.id]);
+
+  const handleCreateMission = async () => {
     if (!newPrompt.trim() || !newTitle.trim()) return;
 
-    const mission: Mission = {
+    setIsSubmitting(true);
+    const newMissionObj: Mission = {
       id: `msn_${Date.now()}`,
       title: newTitle,
       prompt: newPrompt,
@@ -40,10 +62,27 @@ export default function MissionsPage() {
       createdAt: new Date().toISOString()
     };
 
-    setMissions([mission, ...missions]);
-    setNewPrompt('');
-    setNewTitle('');
-    setIsCreating(false);
+    try {
+      if (user?.id) {
+        await saveUserMission(user.id, {
+          title: newTitle,
+          prompt: newPrompt,
+          categories: ['Jobs', 'Fellowships']
+        });
+      }
+      setMissions([newMissionObj, ...missions]);
+      setNewPrompt('');
+      setNewTitle('');
+      setIsCreating(false);
+    } catch (err) {
+      console.warn('Saved mission locally:', err);
+      setMissions([newMissionObj, ...missions]);
+      setNewPrompt('');
+      setNewTitle('');
+      setIsCreating(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -116,54 +155,62 @@ export default function MissionsPage() {
             </button>
             <button
               onClick={handleCreateMission}
-              className="btn btn-primary"
+              disabled={isSubmitting}
+              className="btn btn-primary disabled:opacity-50"
             >
-              Activate Mission
+              {isSubmitting ? 'Activating...' : 'Activate Mission'}
             </button>
           </div>
         </div>
       )}
 
       {/* Active Missions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {missions.map((mission) => (
-          <div 
-            key={mission.id}
-            className="glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 group"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge badge-success">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active Agent
-                </span>
-                <span className="text-xs font-bold text-cyan-400 font-mono">
-                  {mission.matchCount} Matches Found
-                </span>
+      {loading ? (
+        <div className="p-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
+          <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+          <span className="text-xs">Loading active autonomous missions...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {missions.map((mission) => (
+            <div 
+              key={mission.id}
+              className="glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 group"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="badge badge-success">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active Agent
+                  </span>
+                  <span className="text-xs font-bold text-cyan-400 font-mono">
+                    {mission.matchCount} Matches Found
+                  </span>
+                </div>
+
+                <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
+                  {mission.title}
+                </h3>
+
+                <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                  "{mission.prompt}"
+                </p>
               </div>
 
-              <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
-                {mission.title}
-              </h3>
-
-              <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
-                "{mission.prompt}"
-              </p>
+              <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-slate-500" /> Active
+                </span>
+                <Link 
+                  href="/discover"
+                  className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
+                >
+                  View Matches <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
-
-            <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3 text-slate-500" /> Ingested 6h ago
-              </span>
-              <Link 
-                href="/discover"
-                className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
-              >
-                View Matches <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

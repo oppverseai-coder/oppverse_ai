@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Compass, 
   Search, 
@@ -10,22 +10,48 @@ import {
   ShieldCheck, 
   Coins, 
   ArrowRight,
-  LayoutGrid
+  LayoutGrid,
+  Loader2
 } from 'lucide-react';
 import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
 import { evaluateOpportunityMatch } from '@/lib/matching';
-import { Opportunity } from '@/lib/types';
+import { Opportunity, UserProfile } from '@/lib/types';
 import OpportunityModal from '@/components/OpportunityModal';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { fetchOpportunities, fetchUserProfile } from '@/lib/supabase/db';
 
 export default function DiscoverPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>(sampleOpportunities);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedFunding, setSelectedFunding] = useState<string>('All');
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [savedOppIds, setSavedOppIds] = useState<string[]>(['opp_002', 'opp_007']);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [opps, userProf] = await Promise.all([
+          fetchOpportunities(selectedCategory),
+          fetchUserProfile(user?.id)
+        ]);
+        if (opps && opps.length > 0) setOpportunities(opps);
+        if (userProf) setProfile(userProf);
+      } catch (err) {
+        console.warn('Error fetching discover data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [selectedCategory, user?.id]);
 
   const categories = [
     'All', 
@@ -38,15 +64,14 @@ export default function DiscoverPage() {
     'Travel', 
     'Accelerators'
   ];
-  const fundingTypes = ['All', 'Fully Funded', 'Paid', 'Grant Award'];
 
-  const filteredOpportunities = sampleOpportunities.filter(opp => {
+  const filteredOpportunities = opportunities.filter(opp => {
     const matchesCategory = selectedCategory === 'All' || opp.category === selectedCategory;
     const matchesFunding = selectedFunding === 'All' || opp.fundingStatus === selectedFunding;
     const matchesSearch = 
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      opp.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      (opp.description && opp.description.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesFunding && matchesSearch;
   });
 
@@ -140,93 +165,100 @@ export default function DiscoverPage() {
           <span>Ranked by profile relevance</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredOpportunities.map((opp) => {
-            const match = evaluateOpportunityMatch(initialProfile, opp);
-            const isSaved = savedOppIds.includes(opp.id);
-            const isIneligible = match.eligibilityStatus === 'Ineligible';
+        {loading ? (
+          <div className="p-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
+            <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+            <span className="text-xs">Loading verified opportunities...</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredOpportunities.map((opp) => {
+              const match = evaluateOpportunityMatch(profile, opp);
+              const isSaved = savedOppIds.includes(opp.id);
+              const isIneligible = match.eligibilityStatus === 'Ineligible';
 
-            return (
-              <div
-                key={opp.id}
-                onClick={() => handleOpenDetail(opp)}
-                className={`opportunity-card glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border cursor-pointer flex flex-col justify-between space-y-4 group transition-all duration-200 ${
-                  isIneligible ? 'border-rose-900/40 bg-rose-950/10' : ''
-                }`}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                        {opp.category}
-                      </span>
-                      <span className="inline-block w-1 h-1 rounded-full bg-zinc-600 mx-1" />
-                      <span className="text-xs text-zinc-400 font-medium">
-                        {opp.provider}
-                      </span>
+              return (
+                <div
+                  key={opp.id}
+                  onClick={() => handleOpenDetail(opp)}
+                  className={`opportunity-card glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border cursor-pointer flex flex-col justify-between space-y-4 group transition-all duration-200 ${
+                    isIneligible ? 'border-rose-900/40 bg-rose-950/10' : ''
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                          {opp.category}
+                        </span>
+                        <span className="inline-block w-1 h-1 rounded-full bg-zinc-600 mx-1" />
+                        <span className="text-xs text-zinc-400 font-medium">
+                          {opp.provider}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                          isIneligible
+                            ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
+                            : match.matchScore >= 80
+                            ? 'match-badge'
+                            : 'match-badge-neutral'
+                        }`}>
+                          {match.matchScore}% Match
+                        </span>
+                        <button
+                          onClick={(e) => handleToggleSave(opp.id, e)}
+                          className={`icon-button !w-8 !h-8 !min-h-0 !flex-[0_0_32px] ${
+                            isSaved 
+                              ? 'bg-indigo-600/30 border-indigo-500 text-cyan-400' 
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                          }`}
+                          aria-label="Save opportunity"
+                        >
+                          <Bookmark className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                        isIneligible
-                          ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
-                          : match.matchScore >= 80
-                          ? 'match-badge'
-                          : 'match-badge-neutral'
-                      }`}>
-                        {match.matchScore}% Match
-                      </span>
-                      <button
-                        onClick={(e) => handleToggleSave(opp.id, e)}
-                        className={`icon-button !w-8 !h-8 !min-h-0 !flex-[0_0_32px] ${
-                          isSaved 
-                            ? 'bg-indigo-600/30 border-indigo-500 text-cyan-400' 
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                        }`}
-                        aria-label="Save opportunity"
-                      >
-                        <Bookmark className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <h3 className="text-base font-bold text-white group-hover:text-zinc-200 transition-colors">
+                      {opp.title}
+                    </h3>
+
+                    <p className="text-xs text-zinc-400 mt-2 line-clamp-2 leading-relaxed">
+                      {opp.summary}
+                    </p>
                   </div>
 
-                  <h3 className="text-base font-bold text-white group-hover:text-zinc-200 transition-colors">
-                    {opp.title}
-                  </h3>
-
-                  <p className="text-xs text-zinc-400 mt-2 line-clamp-2 leading-relaxed">
-                    {opp.summary}
-                  </p>
+                  {/* Metadata Pills */}
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400 pt-2 border-t border-zinc-800/60">
+                    <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-zinc-500" />
+                      {opp.locationType}
+                    </span>
+                    <span className="metadata-chip px-2 py-0.5 rounded-md">
+                      <Coins className="w-3 h-3 text-cyan-400 inline mr-1" />
+                      {opp.fundingStatus}
+                    </span>
+                    <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-zinc-500" />
+                      {new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" /> Verified
+                    </span>
+                  </div>
                 </div>
-
-                {/* Metadata Pills */}
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400 pt-2 border-t border-zinc-800/60">
-                  <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-zinc-500" />
-                    {opp.locationType}
-                  </span>
-                  <span className="metadata-chip px-2 py-0.5 rounded-md">
-                    <Coins className="w-3 h-3 text-cyan-400 inline mr-1" />
-                    {opp.fundingStatus}
-                  </span>
-                  <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-zinc-500" />
-                    {new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" /> Verified
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Opportunity Detail Modal */}
       <OpportunityModal
         opportunity={selectedOpp}
-        profile={initialProfile}
+        profile={profile}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onPursue={handlePursue}

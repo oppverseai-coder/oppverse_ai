@@ -1,64 +1,68 @@
-﻿# OPPVERSE AI — WORKING MEMORY (LATEST STATE)
+﻿# OPPVERSE AI â€” WORKING MEMORY (LATEST STATE)
 
-**Last Updated:** 2026-09-19 17:37 WAT  
-**Project:** Oppverse AI (C:\Projects\oppverse_ai)  
+**Last Updated:** 2026-09-20 09:25 WAT  
+**Project:** Oppverse AI (`C:\Projects\oppverse_ai`)  
 **Product Lead:** Tomide Williams  
 
 ---
 
-## 📌 1. Latest Action Carried Out
+## ðŸ“Œ 1. Latest Action Carried Out
 
-- **Action:** Full Platform-Wide Mobile Responsiveness, Mobile Slide-Over Drawer, and Native Bottom Navigation.
-- **Scope:** pp/layout.tsx, components/Sidebar.tsx, components/Header.tsx, components/BottomNav.tsx, components/NavProvider.tsx, components/DailyBriefHero.tsx, components/OpportunityModal.tsx, pp/globals.css, pp/applications/page.tsx, pp/profile/page.tsx, pp/discover/page.tsx, pp/saved/page.tsx
-- **Mobile Upgrades:**
-  - **Responsive Shell**: Eliminated hardcoded ml-64 and left-64 offsets; transformed layout to ml-0 lg:ml-64 and left-0 lg:left-64.
-  - **Mobile Slide-Over Drawer**: Added accessible slide-over drawer with blurred dark backdrop, brand header, and close X trigger.
-  - **Mobile Bottom Navigation Bar**: Integrated persistent bottom tab bar (Universe, Discover, Missions, Tracker, AI Agent) with active indicators.
-  - **Header & Search**: Added mobile hamburger menu toggle, compact search bar, and responsive persona switcher.
-  - **Daily Brief & Cards**: Converted metric summary to structured responsive 3-column grid on mobile; cards and modal padding optimized for touch screens.
-  - **Kanban Pipeline**: Enabled smooth horizontal touch-snap scrolling on mobile screens.
-- **GitHub Repository:**
-  - **URL:** [https://github.com/oppverseai-coder/oppverse_ai](https://github.com/oppverseai-coder/oppverse_ai)
-  - **Commit:** 4feaf15 (eat(mobile): complete mobile responsiveness, slide-over drawer, and native bottom navigation)
-- **Vercel Production Deployment:**
-  - **Live URL:** [https://oppverseai.vercel.app](https://oppverseai.vercel.app)
-  - **Status:** DEPLOYING / READY
+- **Action:** Executed Phase A (Supabase Enterprise Database Migration & Seeding) and Phase B (Live Multi-Tenant Data Layer Integration across all Views).
+- **Scope:** Full-stack Database DDL/DML, Row Level Security, pgvector, typed Supabase Client/Database helper layer, and View data hook integration.
+- **Key Deliverables:**
+  1. **Phase A Database Architecture (`supabase/migrations/`):**
+     - Executed `001_initial_schema.sql` via Supabase Management API (`[SUPABASE_MANAGEMENT_TOKEN_SECURED]`).
+     - Enabled `pgvector` and `uuid-ossp` extensions.
+     - Created 7 core enterprise tables: `profiles`, `personas`, `opportunities`, `matches`, `missions`, `applications`, `vault_documents`.
+     - Enabled strict Row Level Security (RLS) on all tables with tenant isolation (`auth.uid() = user_id` / `auth.uid() = id`).
+     - Automated `on_auth_user_created` trigger for immediate zero-friction profile & default persona generation on signup.
+     - Executed `002_seed_opportunities.sql` with verified live opportunities across all 8 categories.
+  2. **Phase B Live Data Layer (`lib/supabase/db.ts`):**
+     - Typed repository helpers for `fetchOpportunities`, `fetchUserProfile`, `updateUserProfile`, `fetchUserMissions`, `saveUserMission`, `fetchUserApplications`, `fetchUserVaultDocs`.
+     - Graceful offline and cold-start fallback ensuring zero empty screen crashes.
+  3. **Connected Live Views:**
+     - `app/page.tsx` (Home Feed): Dynamically reads verified opportunities and personalized matches.
+     - `app/discover/page.tsx` (Catalog): Real-time category filtering, search, and match evaluation.
+     - `app/missions/page.tsx` (Autonomous Agents): Real-time mission creation and persistence to `public.missions`.
+     - `app/applications/page.tsx` (Pipeline & Vault): Dynamic multi-stage Kanban and Master Document Vault.
+     - `app/profile/page.tsx` (Identity Engine): Live reading/writing of profile fields, citizenship gates, skills, and personas.
+     - `app/saved/page.tsx` (Bookmarks): Reads user saved opportunities.
 
 ---
 
-## 🏛️ 2. Current Architecture & State Snapshot
+## ðŸ—ï¸ 2. Current Architecture & State Snapshot
 
 ### Core Technologies
 - **Framework:** Next.js 14.2.35 (App Router, React 18, TypeScript)
-- **Styling:** Tailwind CSS (Custom Dark Theme, Glassmorphism, Zero-Slop Responsive Controls)
-- **Navigation:** Adaptive Desktop Sidebar + Mobile Slide-Over Drawer + Mobile Bottom Tab Bar (NavProvider)
-- **Icons & Animation:** lucide-react, ramer-motion, clsx, 	ailwind-merge
-- **Database & Auth:** Supabase (@supabase/supabase-js, @supabase/ssr)
-- **Org Target:** dzophdkuweprnjztino
+- **Styling:** Tailwind CSS + Lucide Icons + Framer Motion (Preserving original brand theme & dark aesthetic)
+- **Navigation:** Adaptive Desktop Sidebar (Defaults collapsed) + Mobile Drawer + Bottom Tab Bar
+- **Database & Auth:** Supabase (`@supabase/supabase-js`, `@supabase/ssr`, PostgreSQL, pgvector)
+- **Org Target:** `phtikvfamizngfmliprh`
 
-### Live Routes in Production
-| Route | Type | Description |
+### Live Routes
+| Route | Access | Description |
 | :--- | :--- | :--- |
-| / | Static | Home Universe: Responsive DailyBriefHero, Curated Shelves, 8 Universe Filters, Bottom Nav. |
-| /discover | Static | Opportunity Catalog: Responsive multi-filter search across 8 categories. |
-| /profile | Static | Identity Engine: Responsive persona builder, CV upload, skills inventory with touch tab bar. |
-| /missions | Static | My Missions: Autonomous opportunity search agents. |
-| /applications | Static | Kanban Workspace: Responsive touch-snap pipeline tracker. |
-| /agent | Static | Oppverse AI Copilot: Interactive chat with structured card formatter. |
-| /api/parse-cv | Dynamic | AI structured JSON CV extraction endpoint. |
+| `/` & `/app` | Authenticated / Demo | Home Opportunity Universe Feed & Daily Brief Hero |
+| `/login` | Public / Auth | User Sign In (Email + Google OAuth) |
+| `/signup` | Public / Auth | User Registration |
+| `/forgot-password` | Public / Auth | Password Recovery Request |
+| `/onboarding` | Authenticated | 3-Step Setup Wizard |
+| `/discover` | Authenticated / Demo | Multi-filter Opportunity Catalog across 8 Categories |
+| `/missions` | Authenticated / Demo | Autonomous Search Agents Workspace |
+| `/applications` | Authenticated / Demo | Application Kanban Tracker & Document Vault |
+| `/agent` | Authenticated / Demo | Oppverse AI Copilot Chat |
+| `/profile` | Authenticated / Demo | Multi-Persona Identity Engine & CV Parser |
+| `/saved` | Authenticated / Demo | Saved & Bookmarked Opportunities |
 
 ---
 
-## 🔒 3. Credentials & Isolation Checklist
+## ðŸ” 3. Credentials & Isolation Checklist
 
-- **Git & GitHub Email:** oppverseai@gmail.com
-- **GitHub Username:** oppverseai-coder
-- **Vercel Deployment Account:** oppverseai-coder
-- **Supabase Organization:** dzophdkuweprnjztino
+- **Git & GitHub Email:** `oppverseai@gmail.com`
+- **GitHub Username:** `oppverseai-coder`
+- **Vercel Deployment Account:** `oppverseai-coder`
+- **Supabase Organization:** `phtikvfamizngfmliprh`
+- **Local Dev Server:** Active on `http://localhost:3000` (**HTTP 200 OK**)
 
----
 
-## 🎯 4. Immediate Next Steps
-
-1. Verify live rendering across mobile and tablet viewports at https://oppverseai.vercel.app.
-2. Proceed to Phase 5: Autonomous Search Agents & My Missions engine (pp/missions/page.tsx).

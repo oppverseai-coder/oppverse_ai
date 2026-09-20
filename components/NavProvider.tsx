@@ -15,10 +15,16 @@ const NavContext = createContext<NavContextValue | null>(null);
 
 export function NavProvider({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Default to collapsed immediately on load
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   useEffect(() => {
-    setIsSidebarCollapsed(localStorage.getItem('oppverse-sidebar-collapsed') === 'true');
+    const saved = localStorage.getItem('oppverse-sidebar-collapsed');
+    if (saved !== null) {
+      setIsSidebarCollapsed(saved === 'true');
+    } else {
+      setIsSidebarCollapsed(true);
+    }
   }, []);
 
   const toggleSidebar = () => {

@@ -36,3 +36,12 @@ pm run build).
   - Implemented typed repository layer in lib/supabase/db.ts.
   - Connected all app routes (Home, Discover, Missions, Applications, Profile, Saved) to live Supabase backend with cold-start fallbacks.
   - Verified Next.js 14 production build.
+
+## [2026-09-20 09:44 WAT] - PHASE C COMPLETED: AI RESUME / CV INGESTION & PARSING ENGINE
+- **Status:** COMPLETED
+- **Details:**
+  - Implemented server-side file stream processing in app/api/parse-cv/route.ts supporting PDF, DOCX, TXT, and raw text.
+  - Built intelligent entity extraction for Full Name, Years of Experience, Career Level, Citizenship, Verified Skills taxonomy, Education, Work History timeline, and AI Suggested Personas.
+  - Connected direct storage to public.vault_documents in Supabase.
+  - Implemented drag-and-drop dropzone, file selection, parsing status, and interactive Extracted Profile Review Drawer in app/profile/page.tsx.
+  - Verified 100% clean production build (exit code 0).

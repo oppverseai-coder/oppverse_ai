@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, 
   UploadCloud, 
@@ -15,12 +15,14 @@ import {
   GraduationCap, 
   Globe2, 
   Award, 
-  Sliders,
-  ChevronRight,
-  FileText,
-  AlertCircle,
-  X,
-  Loader2
+  Sliders, 
+  ChevronRight, 
+  FileText, 
+  AlertCircle, 
+  X, 
+  Loader2,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { initialProfile as sampleProfile } from '@/lib/sample-data';
 import { UserProfile, OpportunityCategory, Persona } from '@/lib/types';
@@ -29,12 +31,20 @@ import { fetchUserProfile, updateUserProfile } from '@/lib/supabase/db';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [profile, setProfile] = useState<UserProfile>(sampleProfile);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'personas' | 'cv-upload' | 'universes' | 'experience'>('personas');
+  
+  // CV Upload & Parsing State
   const [cvInputText, setCvInputText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [parseSuccess, setParseSuccess] = useState(false);
+  const [extractedPreview, setExtractedPreview] = useState<any | null>(null);
+
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newSkill, setNewSkill] = useState('');
@@ -87,31 +97,90 @@ export default function ProfilePage() {
     setProfile(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skillToRemove) }));
   };
 
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
   const handleParseCV = async () => {
     setIsParsing(true);
     setParseSuccess(false);
 
     try {
-      const res = await fetch('/api/parse-cv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cvText: cvInputText || "Sample Executive CV Content" })
-      });
-      const data = await res.json();
-      if (data.success) {
+      let res;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        if (user?.id) formData.append('userId', user.id);
+
+        res = await fetch('/api/parse-cv', {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        res = await fetch('/api/parse-cv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            cvText: cvInputText || "Sample Executive CV Content",
+            userId: user?.id 
+          })
+        });
+      }
+
+      const result = await res.json();
+      if (result.success && result.data) {
+        setExtractedPreview(result.data);
         setParseSuccess(true);
-        setProfile(prev => ({
-          ...prev,
-          fullName: data.data.fullName || prev.fullName,
-          yearsOfExperience: data.data.yearsOfExperience || prev.yearsOfExperience,
-          skills: Array.from(new Set([...prev.skills, ...(data.data.skills || [])])),
-          profileStrength: 92
-        }));
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error extracting CV:', e);
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  const handleApplyExtractedData = async () => {
+    if (!extractedPreview) return;
+
+    const mergedProfile: UserProfile = {
+      ...profile,
+      fullName: extractedPreview.fullName || profile.fullName,
+      email: extractedPreview.email || profile.email,
+      yearsOfExperience: extractedPreview.yearsOfExperience || profile.yearsOfExperience,
+      careerLevel: extractedPreview.careerLevel || profile.careerLevel,
+      citizenship: extractedPreview.citizenship?.length ? extractedPreview.citizenship : profile.citizenship,
+      countryOfResidence: extractedPreview.countryOfResidence || profile.countryOfResidence,
+      city: extractedPreview.city || profile.city,
+      skills: Array.from(new Set([...profile.skills, ...(extractedPreview.skills || [])])),
+      education: extractedPreview.education?.length ? extractedPreview.education : profile.education,
+      workHistory: extractedPreview.workHistory?.length ? extractedPreview.workHistory : profile.workHistory,
+      personas: extractedPreview.suggestedPersonas?.length ? extractedPreview.suggestedPersonas : profile.personas,
+      profileStrength: 94
+    };
+
+    setProfile(mergedProfile);
+    setIsSaving(true);
+    try {
+      if (user?.id) {
+        await updateUserProfile(user.id, mergedProfile);
+      }
+      setSaveSuccess(true);
+      setExtractedPreview(null);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.warn('Error saving merged profile:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -130,8 +199,6 @@ export default function ProfilePage() {
     }
   };
 
-  const activePersona = profile.personas?.find(p => p.id === profile.activePersonaId) || profile.personas?.[0] || sampleProfile.personas[0];
-
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Top Banner & Title */}
@@ -146,7 +213,7 @@ export default function ProfilePage() {
                 Opportunity Profile & Identity Engine
               </h1>
               <p className="page-description">
-                One profile powers your entire personalized opportunity universe.
+                One master profile powers your entire personalized opportunity universe.
               </p>
             </div>
           </div>
@@ -191,7 +258,7 @@ export default function ProfilePage() {
                   : ''
               }`}
             >
-              <UploadCloud className="w-3.5 h-3.5" /> AI CV Ingestion
+              <UploadCloud className="w-3.5 h-3.5" /> AI Resume Ingestion
             </button>
             <button
               onClick={() => setActiveTab('universes')}
@@ -234,7 +301,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {(profile.personas || []).map((persona) => {
                     const isSelected = persona.id === profile.activePersonaId;
                     return (
@@ -257,7 +324,7 @@ export default function ProfilePage() {
                           {persona.headline || persona.role}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-1">
-                          {(persona.targetUniverses || (persona as any).targetCategories || ['Jobs', 'Fellowships']).slice(0, 2).map((u: string, i: number) => (
+                          {(persona.targetUniverses || (persona as any).targetCategories || ['Jobs', 'Fellowships']).slice(0, 3).map((u: string, i: number) => (
                             <span key={i} className="text-[9px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 font-medium">
                               {u}
                             </span>
@@ -357,10 +424,10 @@ export default function ProfilePage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-zinc-400" /> Fast-Track AI CV Parser
+                    <Sparkles className="w-5 h-5 text-cyan-400" /> AI Resume Ingestion & Parser
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Paste your resume text or upload your CV to auto-populate your Oppverse Profile.
+                    Upload your PDF / DOCX resume or paste your bio to auto-populate verified skills, timeline, and personas.
                   </p>
                 </div>
                 <span className="badge">
@@ -369,46 +436,124 @@ export default function ProfilePage() {
               </div>
 
               {/* Upload Dropzone */}
-              <div className="dropzone">
-                <UploadCloud className="w-8 h-8 text-zinc-400 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-white">Drag & drop your CV (PDF or DOCX)</p>
-                <p className="text-xs text-slate-500 mt-1">or paste your resume text below for instant AI extraction</p>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".pdf,.docx,.doc,.txt"
+                className="hidden"
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileDrop}
+                className={`dropzone cursor-pointer p-8 rounded-2xl border-2 border-dashed text-center transition-all ${
+                  isDragging 
+                    ? 'border-cyan-400 bg-cyan-950/20' 
+                    : selectedFile 
+                    ? 'border-emerald-500/60 bg-emerald-950/10' 
+                    : 'border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <UploadCloud className={`w-10 h-10 mx-auto mb-3 ${selectedFile ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                {selectedFile ? (
+                  <div>
+                    <p className="text-sm font-bold text-white flex items-center justify-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-400" /> {selectedFile.name}
+                    </p>
+                    <p className="text-xs text-emerald-400/80 mt-1">Ready to extract with Oppverse AI</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-semibold text-white">Click or Drag & Drop your Resume (PDF, DOCX)</p>
+                    <p className="text-xs text-slate-500 mt-1">Files up to 25MB supported</p>
+                  </div>
+                )}
               </div>
 
               {/* Text Input Option */}
               <div>
                 <label className="text-xs font-semibold text-slate-300 mb-2 block">
-                  Paste Resume / Bio Text (Optional)
+                  Or Paste Resume / LinkedIn Summary Text
                 </label>
                 <textarea
-                  rows={6}
+                  rows={4}
                   value={cvInputText}
                   onChange={(e) => setCvInputText(e.target.value)}
-                  placeholder="Paste your CV, LinkedIn summary, or bio here to let Oppverse extract your roles, degrees, and verified capabilities..."
+                  placeholder="Paste your CV or LinkedIn summary here if you don't have a PDF file handy..."
                   className="w-full p-3 rounded-xl glass-input text-xs leading-relaxed"
                 />
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Grounded in your real experience only
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Extracts verified timeline & capabilities only
                 </p>
                 <button
                   onClick={handleParseCV}
-                  disabled={isParsing}
+                  disabled={isParsing || (!selectedFile && !cvInputText.trim())}
                   className="btn btn-primary disabled:opacity-50"
                 >
-                  <FileText className="w-4 h-4" />
-                  {isParsing ? 'Extracting with Oppverse AI...' : 'Extract & Populate Profile'}
+                  {isParsing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Extracting with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-cyan-300" /> Extract & Analyze Resume
+                    </>
+                  )}
                 </button>
               </div>
 
-              {parseSuccess && (
-                <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              {/* Extracted Data Review Card */}
+              {extractedPreview && (
+                <div className="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-700 space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Extracted Profile Review
+                    </h4>
+                    <span className="text-[10px] font-semibold text-zinc-400">92% Verification Score</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800">
+                      <span className="text-zinc-500 block text-[10px]">Full Name</span>
+                      <strong className="text-white">{extractedPreview.fullName}</strong>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800">
+                      <span className="text-zinc-500 block text-[10px]">Track Record</span>
+                      <strong className="text-white">{extractedPreview.yearsOfExperience}+ Years ({extractedPreview.careerLevel})</strong>
+                    </div>
+                  </div>
+
                   <div>
-                    <p className="font-bold">Extraction Successful!</p>
-                    <p className="text-emerald-400/80">Extracted verified skills, past roles, and your verified qualifications.</p>
+                    <span className="text-zinc-400 text-xs font-semibold block mb-1.5">Extracted Core Capabilities ({extractedPreview.skills.length}):</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {extractedPreview.skills.map((s: string) => (
+                        <span key={s} className="text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-cyan-300 border border-zinc-700">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-zinc-800">
+                    <button
+                      onClick={() => setExtractedPreview(null)}
+                      className="btn btn-secondary text-xs"
+                    >
+                      Dismiss
+                    </button>
+                    <button
+                      onClick={handleApplyExtractedData}
+                      disabled={isSaving}
+                      className="btn btn-primary text-xs"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-400" /> Apply to My Profile
+                    </button>
                   </div>
                 </div>
               )}

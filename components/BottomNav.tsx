@@ -15,7 +15,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Universe', href: '/', icon: LayoutGrid },
+    { name: 'Universe', href: '/app', icon: LayoutGrid },
     { name: 'Discover', href: '/discover', icon: Compass },
     { name: 'Missions', href: '/missions', icon: Target },
     { name: 'Tracker', href: '/applications', icon: Briefcase },

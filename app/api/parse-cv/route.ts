@@ -205,7 +205,7 @@ function extractProfileFromText(text: string, fileName: string) {
   return {
     fullName,
     email,
-    headline: `${suggestedPersonas[0].role} â€¢ ${yearsOfExperience}+ Years Experience`,
+    headline: `${suggestedPersonas[0].role} \u2022 ${yearsOfExperience}+ Years Experience`,
     yearsOfExperience,
     careerLevel,
     citizenship: detectedCitizenship,

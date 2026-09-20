@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -12,11 +12,13 @@ import {
   MessageSquare, 
   User, 
   Activity,
+  LogOut,
   X
 } from 'lucide-react';
 import { useNav } from '@/components/NavProvider';
+import { useAuth } from '@/components/AuthProvider';
 
-export function SidebarToggleIcon({ className = "w-4 h-4" }: { className?: string }) {
+export function SidebarToggleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg 
       className={className} 
@@ -36,7 +38,13 @@ export function SidebarToggleIcon({ className = "w-4 h-4" }: { className?: strin
 export default function Sidebar() {
   const pathname = usePathname();
   const { isMobileMenuOpen, closeMobileMenu, isSidebarCollapsed, toggleSidebar } = useNav();
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password') || pathname.startsWith('/onboarding');
+  const { user, signOut } = useAuth();
+
+  const isAuthPage = pathname.startsWith('/login') || 
+                     pathname.startsWith('/signup') || 
+                     pathname.startsWith('/forgot-password') || 
+                     pathname.startsWith('/reset-password') || 
+                     pathname.startsWith('/onboarding');
   if (isAuthPage) return null;
 
   const navItems = [
@@ -49,21 +57,20 @@ export default function Sidebar() {
     { name: 'Opportunity Profile', href: '/profile', icon: User, highlight: true },
   ];
 
+  const userDisplayName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'Member');
+
   const sidebarContent = (collapsed = false) => (
     <div className="flex flex-col justify-between h-full">
       <div>
         {/* Brand Header */}
         <div className={`brand-header h-20 flex items-center border-b border-zinc-800 ${collapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
           {collapsed ? (
-            <button
-              type="button"
-              onClick={toggleSidebar}
+            <div
               className="sidebar-link flex min-h-10 w-full items-center justify-center py-2 rounded-xl hover:bg-zinc-900 border border-transparent transition-all group"
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
+              title="Oppverse AI"
             >
               <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-7 h-7 object-contain rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
-            </button>
+            </div>
           ) : (
             <div className="flex items-center justify-between w-full min-w-0">
               <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-2.5 group whitespace-nowrap min-w-0" title="Oppverse AI">
@@ -137,34 +144,60 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Profile Mini Status */}
-      <div className={`profile-status border-t border-zinc-800 ${collapsed ? 'p-2' : 'p-4'}`}>
+      {/* Profile Mini Status & Log Out Section (Bottom Left) */}
+      <div className={`profile-status border-t border-zinc-800 space-y-2.5 ${collapsed ? 'p-2' : 'p-4'}`}>
         {collapsed ? (
-          <div className="flex flex-col items-center">
-            <Link href="/profile" className="icon-button !w-10 !h-10" title="Profile strength: 88%" aria-label="Profile strength: 88%">
-              <Activity className="w-4 h-4" />
+          <div className="flex flex-col items-center gap-2">
+            <Link href="/profile" className="icon-button !w-10 !h-10" title="Opportunity Score" aria-label="Opportunity Score">
+              <Activity className="w-4 h-4 text-zinc-400" />
             </Link>
+            <button
+              onClick={() => signOut()}
+              className="icon-button !w-10 !h-10 hover:!border-rose-500/40 hover:!text-rose-400 text-zinc-400 transition-colors"
+              title="Log Out"
+              aria-label="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         ) : (
-          <Link 
-            href="/profile"
-            onClick={closeMobileMenu}
-            className="profile-status-card p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 block transition-colors group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-300 group-hover:text-white flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-slate-400" />
-                Profile Strength
+          <>
+            <Link 
+              href="/profile"
+              onClick={closeMobileMenu}
+              className="profile-status-card p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 block transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-slate-300 group-hover:text-white flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-zinc-400" />
+                  Opportunity Score
+                </span>
+                <span className="text-xs font-bold text-zinc-100">88%</span>
+              </div>
+              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-zinc-200 h-full rounded-full w-[88%]" />
+              </div>
+              <p className="text-[11px] text-slate-500 mt-2 truncate">
+                User: <span className="text-slate-300 font-medium">{userDisplayName}</span>
+              </p>
+            </Link>
+
+            {/* Log Out Button Directly Below Opportunity Score */}
+            <button
+              type="button"
+              onClick={() => {
+                closeMobileMenu();
+                signOut();
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 border border-zinc-800/80 hover:border-rose-800/50 transition-all group"
+            >
+              <span className="flex items-center gap-2">
+                <LogOut className="w-4 h-4 text-zinc-500 group-hover:text-rose-400 transition-colors" />
+                <span>Log Out</span>
               </span>
-              <span className="text-xs font-bold text-zinc-100">88%</span>
-            </div>
-            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-zinc-200 h-full rounded-full w-[88%]" />
-            </div>
-            <p className="text-[11px] text-slate-500 mt-2 truncate">
-              Active: <span className="text-slate-300 font-medium">Product Marketing Lead</span>
-            </p>
-          </Link>
+              <span className="text-[10px] text-zinc-500 group-hover:text-rose-400/80 font-mono">Sign out</span>
+            </button>
+          </>
         )}
       </div>
     </div>

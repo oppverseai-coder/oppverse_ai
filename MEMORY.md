@@ -1,12 +1,20 @@
 ﻿# OPPVERSE AI â€” WORKING MEMORY (LATEST STATE)
 
-**Last Updated:** 2026-09-20 10:49 WAT  
+**Last Updated:** 2026-09-20 11:50 WAT  
 **Project:** Oppverse AI (`C:\Projects\oppverse_ai`)  
 **Product Lead:** Tomide Williams  
 
 ---
 
 ## ðŸ“Œ 1. Latest Action Carried Out
+
+- **Action:** Restored the original Oppverse landing page to `/` from the immutable five-hour-old Vercel deployment without redesigning or rewriting it.
+- **Recovered artifacts:** Original deployed page structure, copy, iconography, imagery, animation, responsive behavior, and exact deployed CSS values. Landing assets in `public/landing/` were preserved and reused.
+- **Route preservation:** Copied the current authenticated Opportunity Universe implementation into `app/app/page.tsx`; `/app` remains the dashboard. Updated desktop and mobile Universe navigation links to `/app`.
+- **Shell isolation:** `Sidebar` and `AppShell` now treat `/` as a public route, preventing application navigation and header chrome from wrapping the restored landing page.
+- **Verification:** `npx tsc --noEmit` passed; local HTTP checks returned `200` for both `/` and `/app`, with their expected landing and dashboard content detected. All 45 CSS module classes referenced by the recovered page resolve successfully.
+
+### Previous Action
 
 - **Action:** Restored a restrained Oppverse violet interaction layer without changing application structure, data, routes, or behavior.
 - **Scope:** Frontend presentation tokens and compatibility mappings in `app/globals.css` only.
@@ -77,5 +85,12 @@
 - **Vercel Deployment Account:** `oppverseai-coder`
 - **Supabase Organization:** `phtikvfamizngfmliprh`
 - **Local Dev Server:** Active on `http://localhost:3000` (**HTTP 200 OK**)
+
+## 2026-09-20 Landing Route Restoration
+
+- Restored the original public landing page at `/` without visual or copy changes.
+- Preserved the application dashboard at `/app` and updated internal dashboard navigation accordingly.
+- Production deployment: `https://oppverseai.vercel.app`
+- Verified production `/` and `/app` both return HTTP 200 with their expected content.
 
 

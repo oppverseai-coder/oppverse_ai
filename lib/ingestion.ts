@@ -52,7 +52,7 @@ export const EXTERNAL_FEEDS = [
           location_type: 'Hybrid',
           host_country: 'United Kingdom',
           funding_status: 'Fully Funded',
-          funding_amount: 'Â£40,000 - Â£120,000',
+          funding_amount: '\u00a340,000 - \u00a3120,000',
           deadline: new Date(Date.now() + 21 * 86400000).toISOString(),
           official_source_url: 'https://deepmind.google/research/grants',
           application_url: 'https://deepmind.google/research/grants/apply',

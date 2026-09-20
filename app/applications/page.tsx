@@ -387,7 +387,7 @@ export default function ApplicationsPage() {
                   </select>
                 </div>
                 <h3 className="text-base font-bold text-white leading-snug">{selectedApp.title}</h3>
-                <p className="text-xs text-zinc-400">{selectedApp.provider} â€¢ {selectedApp.category}</p>
+                <p className="text-xs text-zinc-400">{selectedApp.provider} &bull; {selectedApp.category}</p>
               </div>
 
               {/* Workspace Subtabs: Checklist vs AI Copilot */}
@@ -574,7 +574,7 @@ export default function ApplicationsPage() {
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-white truncate">{doc.name}</h4>
-                      <p className="text-xs text-zinc-400">{doc.type} â€¢ {doc.size}</p>
+                      <p className="text-xs text-zinc-400">{doc.type} &bull; {doc.size}</p>
                     </div>
                   </div>
 

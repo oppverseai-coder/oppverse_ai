@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquareText, 
   Send, 
@@ -57,6 +57,13 @@ export default function AgentPage() {
 
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   const quickPrompts = [
     "What are my top 3 opportunities closing this month?",
@@ -94,17 +101,17 @@ export default function AgentPage() {
         replyText = `Here are your **Top 3 Verified Opportunities** ranked by the 5-Layer Matching Engine for your **${profile.fullName}** profile:\n\n` +
           ranked.map((r, idx) => 
             `**${idx + 1}. ${r.opp.title}** (${r.opp.provider})\n` +
-            `â€¢ **Fit:** ${r.match.matchScore}% Match (${r.opp.fundingStatus}: ${r.opp.fundingAmount || 'Fully Covered'})\n` +
-            `â€¢ **Deadline:** ${new Date(r.opp.deadline).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}\n` +
-            `â€¢ **Why it matches:** ${r.match.whyItMatches[0] || 'High verified capability overlap.'}\n`
+            `\u2022 **Fit:** ${r.match.matchScore}% Match (${r.opp.fundingStatus}: ${r.opp.fundingAmount || 'Fully Covered'})\n` +
+            `\u2022 **Deadline:** ${new Date(r.opp.deadline).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}\n` +
+            `\u2022 **Why it matches:** ${r.match.whyItMatches[0] || 'High verified capability overlap.'}\n`
           ).join('\n') +
           `\nWould you like me to generate a tailored preparation checklist for any of these?`;
       } else if (q.includes('berlin') || q.includes('checklist')) {
         replyText = "Here is your custom **Preparation Checklist** for the **Berlin AI & Emerging Tech Leadership Fellowship**:\n\n" +
-          "â€¢ **[Ready] Master CV:** Verified product marketing & AI revenue systems track record.\n" +
-          "â€¢ **[Action Required] 800-Word Motivation Statement:** Focus on Nigerian AI ecosystem case studies and Conductor time intelligence framework.\n" +
-          "â€¢ **[Action Required] 2 References:** Request endorsement from VP of Engineering / Executive collaborator.\n" +
-          "â€¢ **[Logistics]:** Fully covered (â‚¬4,200/mo stipend + roundtrip flights + housing in Berlin Mitte).\n\n" +
+          "\u2022 **[Ready] Master CV:** Verified product marketing & AI revenue systems track record.\n" +
+          "\u2022 **[Action Required] 800-Word Motivation Statement:** Focus on Nigerian AI ecosystem case studies and Conductor time intelligence framework.\n" +
+          "\u2022 **[Action Required] 2 References:** Request endorsement from VP of Engineering / Executive collaborator.\n" +
+          "\u2022 **[Logistics]:** Fully covered (\u20ac4,200/mo stipend + roundtrip flights + housing in Berlin Mitte).\n\n" +
           "I have structured this application in your **Applications Workspace**. Would you like to start drafting the motivation statement?";
       } else if (q.includes('fellowship') || q.includes('scholarship') || q.includes('fully funded')) {
         const fundedOpps = opportunities
@@ -114,8 +121,8 @@ export default function AgentPage() {
         replyText = `I found **${fundedOpps.length} Verified Fully Funded Opportunities** with confirmed African / Nigerian applicant eligibility:\n\n` +
           fundedOpps.map((opp, i) => 
             `**${i + 1}. ${opp.title}** (${opp.provider})\n` +
-            `â€¢ **Category:** ${opp.category} â€¢ **Coverage:** ${opp.fundingAmount || '100% Funded'}\n` +
-            `â€¢ **Location:** ${opp.locationType} (${opp.hostCountry || 'Global'})\n`
+            `\u2022 **Category:** ${opp.category} \u2022 **Coverage:** ${opp.fundingAmount || '100% Funded'}\n` +
+            `\u2022 **Location:** ${opp.locationType} (${opp.hostCountry || 'Global'})\n`
           ).join('\n') +
           `\nAll items are pre-screened with **zero eligibility disqualifications**.`;
       } else {
@@ -128,8 +135,8 @@ export default function AgentPage() {
           replyText = `Based on your query "${messageToSend}", I matched **${matches.length} opportunities** in the Opportunity Graph:\n\n` +
             matches.map((m, i) => 
               `**${i + 1}. ${m.opp.title}** (${m.opp.provider})\n` +
-              `â€¢ **Match Fit:** ${m.match.matchScore}% (${m.match.matchLabel})\n` +
-              `â€¢ **Eligibility:** ${m.match.eligibilityStatus}\n`
+              `\u2022 **Match Fit:** ${m.match.matchScore}% (${m.match.matchLabel})\n` +
+              `\u2022 **Eligibility:** ${m.match.eligibilityStatus}\n`
             ).join('\n');
         } else {
           replyText = `I analyzed our Opportunity Graph for "${messageToSend}". I verified 4 potential opportunities across Jobs, Fellowships, and Speaking engagements matching your active **${profile.personas[0]?.name || 'Product Marketing'}** persona. Would you like me to activate a continuous search mission for this?`;
@@ -160,13 +167,13 @@ export default function AgentPage() {
               Oppverse AI Copilot
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
             </h1>
-            <p className="text-xs text-slate-400">Connected to Opportunity Graph â€¢ 5-Layer Explainable Matching Engine</p>
+            <p className="text-xs text-slate-400">Connected to Opportunity Graph &bull; 5-Layer Explainable Matching Engine</p>
           </div>
         </div>
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-4 pr-2">
         {messages.map((msg) => (
           <div
             key={msg.id}

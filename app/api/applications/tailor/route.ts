@@ -43,7 +43,7 @@ Format with:
       prompt = `Write a compelling, structured Statement of Purpose / Motivation Statement for ${candidateName} applying to "${oppTitle}" at "${oppOrg}".
 Opportunity Context: ${oppDesc}
 Candidate Background: ${candidateRole} with skills in ${candidateSkills}. Work History: ${candidateBio}.
-Requirements: Ground strictly in candidate credentials, zero AI fluff or clichÃ©s, concise 3-paragraph structure.`;
+Requirements: Ground strictly in candidate credentials, zero AI fluff or clich\u00e9s, concise 3-paragraph structure.`;
     }
 
     if (customPrompt) {

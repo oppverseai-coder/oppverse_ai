@@ -405,9 +405,9 @@ export default function ProfilePage() {
                       onChange={(e: any) => setProfile({ ...profile, careerLevel: e.target.value })}
                       className="w-full p-2.5 rounded-xl glass-input text-sm"
                     >
-                      <option value="Early-Career">Early-Career (0â€“3 yrs)</option>
-                      <option value="Mid-Career">Mid-Career (3â€“6 yrs)</option>
-                      <option value="Senior">Senior (6â€“10 yrs)</option>
+                      <option value="Early-Career">Early-Career (0&ndash;3 yrs)</option>
+                      <option value="Mid-Career">Mid-Career (3&ndash;6 yrs)</option>
+                      <option value="Senior">Senior (6&ndash;10 yrs)</option>
                       <option value="Executive">Executive / Director (10+ yrs)</option>
                       <option value="Founder">Founder / Venture Builder</option>
                       <option value="Student">Student / Graduate</option>
@@ -672,9 +672,9 @@ export default function ProfilePage() {
                     <div key={idx} className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-white text-sm">{work.role}</span>
-                        <span className="text-[11px] text-slate-400">{work.startDate} â€” {work.endDate}</span>
+                        <span className="text-[11px] text-slate-400">{work.startDate} &mdash; {work.endDate}</span>
                       </div>
-                      <p className="text-xs text-cyan-400 font-medium">{work.company} â€¢ {work.location}</p>
+                      <p className="text-xs text-cyan-400 font-medium">{work.company} &bull; {work.location}</p>
                       <p className="text-xs text-slate-400 pt-1 leading-relaxed">{work.description}</p>
                     </div>
                   ))}

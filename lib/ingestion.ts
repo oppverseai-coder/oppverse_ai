@@ -1,28 +1,24 @@
-﻿import { supabase } from '@/lib/supabase/client';
+﻿import { createClient } from '@/lib/supabase/client';
 import { Opportunity } from '@/lib/types';
 
 export interface ScrapedOpportunityInput {
   title: string;
-  slug?: string;
-  organization: string;
+  provider: string;
   category: string;
   description: string;
-  location: string;
+  summary?: string;
   location_type?: string;
-  funding_type: string;
+  host_country?: string;
+  funding_status: string;
   funding_amount?: string;
   deadline: string;
-  url: string;
-  source_universe?: string;
-  required_skills?: string[];
-  citizenship_restrictions?: string[];
-  seniority_level?: string;
-  currency?: string;
+  official_source_url: string;
+  application_url: string;
+  tags?: string[];
+  eligible_countries?: string[];
+  experience_required?: string;
 }
 
-/**
- * Standard simulated & real RSS/API opportunity feeds
- */
 export const EXTERNAL_FEEDS = [
   {
     name: 'Global Tech Fellowships & Grants',
@@ -32,81 +28,79 @@ export const EXTERNAL_FEEDS = [
       return [
         {
           title: 'Mozilla Tech & Society Fellowship 2026',
-          organization: 'Mozilla Foundation',
+          provider: 'Mozilla Foundation',
           category: 'Fellowships',
           description: 'A 12-month funded fellowship supporting technologists, researchers, and advocates working at the intersection of open-source technology, civil society, and AI governance.',
-          location: 'Global / Remote',
+          summary: '12-month funded fellowship for open-source AI and public interest technologists.',
           location_type: 'Remote',
-          funding_type: 'Fully Funded',
+          host_country: 'Worldwide',
+          funding_status: 'Fully Funded',
           funding_amount: '$85,000 Stipend + Travel',
-          deadline: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-          url: 'https://foundation.mozilla.org/fellowships',
-          source_universe: 'Fellowships',
-          required_skills: ['AI Governance', 'Open Source', 'Public Interest Tech', 'Policy Research'],
-          citizenship_restrictions: ['Worldwide (No restriction)'],
-          seniority_level: 'Mid to Senior',
-          currency: 'USD'
+          deadline: new Date(Date.now() + 14 * 86400000).toISOString(),
+          official_source_url: 'https://foundation.mozilla.org/fellowships',
+          application_url: 'https://foundation.mozilla.org/fellowships/apply',
+          tags: ['AI Governance', 'Open Source', 'Public Interest Tech', 'Policy Research'],
+          eligible_countries: ['All'],
+          experience_required: 'Mid to Senior'
         },
         {
           title: 'DeepMind AI Alignment Grant Program',
-          organization: 'DeepMind & Open Research',
+          provider: 'DeepMind & Open Research',
           category: 'Grants',
           description: 'Non-dilutive research funding for independent researchers, research groups, and early-stage founders building interpretability tools and AI safety benchmarks.',
-          location: 'London, UK / Remote',
+          summary: 'Non-dilutive research grants for interpretability and safety research.',
           location_type: 'Hybrid',
-          funding_type: 'Fully Funded',
+          host_country: 'United Kingdom',
+          funding_status: 'Fully Funded',
           funding_amount: 'Â£40,000 - Â£120,000',
-          deadline: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
-          url: 'https://deepmind.google/research/grants',
-          source_universe: 'Grants',
-          required_skills: ['Machine Learning', 'PyTorch', 'Model Interpretability', 'Safety Benchmarking'],
-          citizenship_restrictions: ['Worldwide (No restriction)'],
-          seniority_level: 'All Levels',
-          currency: 'GBP'
+          deadline: new Date(Date.now() + 21 * 86400000).toISOString(),
+          official_source_url: 'https://deepmind.google/research/grants',
+          application_url: 'https://deepmind.google/research/grants/apply',
+          tags: ['Machine Learning', 'PyTorch', 'Model Interpretability', 'Safety Benchmarking'],
+          eligible_countries: ['All'],
+          experience_required: 'All Levels'
         },
         {
           title: 'MIT Solve Global Climate Tech Accelerator 2026',
-          organization: 'MIT Solve',
+          provider: 'MIT Solve',
           category: 'Accelerators',
           description: '9-month acceleration program providing non-dilutive grant funding, MIT mentorship, and global pilot partnerships for tech-enabled climate and clean energy solutions.',
-          location: 'Cambridge, MA, USA / Hybrid',
+          summary: '9-month global climate tech accelerator with non-dilutive capital.',
           location_type: 'Hybrid',
-          funding_type: 'Fully Funded',
+          host_country: 'United States',
+          funding_status: 'Fully Funded',
           funding_amount: '$100,000 Grant + MIT Mentorship',
-          deadline: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0], // Closing in 5 days (urgent test)
-          url: 'https://solve.mit.edu/challenges/climate-2026',
-          source_universe: 'Accelerators',
-          required_skills: ['Climate Tech', 'Hardware/IoT', 'Product Strategy', 'Venture Scaling'],
-          citizenship_restrictions: ['Worldwide (No restriction)'],
-          seniority_level: 'Founders / Lead Engineers',
-          currency: 'USD'
+          deadline: new Date(Date.now() + 5 * 86400000).toISOString(), // Closing in 5 days
+          official_source_url: 'https://solve.mit.edu/challenges/climate-2026',
+          application_url: 'https://solve.mit.edu/challenges/climate-2026/apply',
+          tags: ['Climate Tech', 'Hardware/IoT', 'Product Strategy', 'Venture Scaling'],
+          eligible_countries: ['All'],
+          experience_required: 'Founders / Lead Engineers'
         },
         {
           title: 'ETH Global Paris Hackathon 2026',
-          organization: 'ETHGlobal',
-          category: 'Hackathons',
+          provider: 'ETHGlobal',
+          category: 'Competitions',
           description: 'A 3-day premier international Web3 and decentralized AI hackathon with $350k+ in sponsor bounties, live mentorship, and venture investor demo day.',
-          location: 'Paris, France',
-          location_type: 'In-person',
-          funding_type: 'Partially Funded',
+          summary: 'Premier international Web3 and AI hackathon with $350k+ in bounties.',
+          location_type: 'Physical',
+          host_country: 'France',
+          funding_status: 'Partially Funded',
           funding_amount: '$350,000+ Prize Pool',
-          deadline: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0], // Closing in 2 days (critical test)
-          url: 'https://ethglobal.com/events/paris2026',
-          source_universe: 'Hackathons',
-          required_skills: ['Solidity', 'Smart Contracts', 'Full Stack', 'Zero Knowledge'],
-          citizenship_restrictions: ['Worldwide (No restriction)'],
-          seniority_level: 'All Levels',
-          currency: 'USD'
+          deadline: new Date(Date.now() + 2 * 86400000).toISOString(), // Closing in 2 days
+          official_source_url: 'https://ethglobal.com/events/paris2026',
+          application_url: 'https://ethglobal.com/events/paris2026/register',
+          tags: ['Solidity', 'Smart Contracts', 'Full Stack', 'Zero Knowledge'],
+          eligible_countries: ['All'],
+          experience_required: 'All Levels'
         }
       ];
     }
   }
 ];
 
-/**
- * Ingestion runner with deduplication and Supabase persistence
- */
 export async function runOpportunityIngestion(sourceName?: string) {
+  const supabase = createClient();
   const results = {
     scrapedCount: 0,
     insertedCount: 0,
@@ -124,16 +118,11 @@ export async function runOpportunityIngestion(sourceName?: string) {
       results.scrapedCount += items.length;
 
       for (const item of items) {
-        const generatedSlug = (item.title + '-' + item.organization)
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
-
-        // Check if opportunity exists in Supabase
+        // Check if opportunity exists in Supabase by title
         const { data: existing, error: fetchErr } = await supabase
           .from('opportunities')
           .select('id, title, deadline')
-          .or(`title.eq."${item.title}",slug.eq."${generatedSlug}"`)
+          .eq('title', item.title)
           .maybeSingle();
 
         if (fetchErr && fetchErr.code !== 'PGRST116') {
@@ -143,27 +132,27 @@ export async function runOpportunityIngestion(sourceName?: string) {
 
         const opportunityPayload = {
           title: item.title,
-          slug: generatedSlug,
-          organization: item.organization,
+          provider: item.provider,
           category: item.category,
+          subcategory: item.tags?.[0] || 'General',
           description: item.description,
-          location: item.location,
+          summary: item.summary || item.description.slice(0, 120),
           location_type: item.location_type || 'Remote',
-          funding_type: item.funding_type,
+          host_country: item.host_country || 'Worldwide',
+          funding_status: item.funding_status || 'Fully Funded',
           funding_amount: item.funding_amount || null,
           deadline: item.deadline,
-          url: item.url,
-          source_universe: item.source_universe || item.category,
-          required_skills: item.required_skills || [],
-          citizenship_restrictions: item.citizenship_restrictions || ['Worldwide'],
-          seniority_level: item.seniority_level || 'All Levels',
-          currency: item.currency || 'USD',
-          status: 'Active',
-          verified: true
+          official_source_url: item.official_source_url,
+          application_url: item.application_url,
+          eligible_countries: item.eligible_countries || ['All'],
+          application_complexity: 'Moderate',
+          required_documents: ['Resume / CV', 'Application Form'],
+          experience_required: item.experience_required || 'All Levels',
+          verification_status: 'Verified',
+          is_featured: true
         };
 
         if (existing) {
-          // Update existing
           const { error: updateErr } = await supabase
             .from('opportunities')
             .update(opportunityPayload)
@@ -175,7 +164,6 @@ export async function runOpportunityIngestion(sourceName?: string) {
             results.updatedCount++;
           }
         } else {
-          // Insert new
           const { error: insertErr } = await supabase
             .from('opportunities')
             .insert([opportunityPayload]);

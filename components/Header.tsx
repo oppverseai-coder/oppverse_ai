@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Search, 
@@ -12,21 +12,53 @@ import {
   ShieldCheck,
   Menu,
   LogOut,
-  LogIn
+  LogIn,
+  Clock,
+  Sparkles,
+  AlertTriangle,
+  X,
+  ExternalLink
 } from 'lucide-react';
-import { initialProfile } from '@/lib/sample-data';
+import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
 import { useTheme } from '@/components/ThemeProvider';
 import { useNav } from '@/components/NavProvider';
-
 import { useAuth } from '@/components/AuthProvider';
+import { generateOpportunityNotifications, AppNotification } from '@/lib/notifications';
+import { fetchOpportunities } from '@/lib/supabase/db';
 
 export default function Header() {
   const [selectedPersonaId, setSelectedPersonaId] = useState(initialProfile.activePersonaId);
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const { theme, toggleTheme } = useTheme();
-  const { toggleMobileMenu, isSidebarCollapsed, toggleSidebar } = useNav();
+  const { toggleMobileMenu, isSidebarCollapsed } = useNav();
   const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    async function loadNotifs() {
+      try {
+        const liveOpps = await fetchOpportunities();
+        const list = liveOpps && liveOpps.length > 0 ? liveOpps : sampleOpportunities;
+        const notifs = generateOpportunityNotifications(list);
+        setNotifications(notifs);
+      } catch (e) {
+        setNotifications(generateOpportunityNotifications(sampleOpportunities));
+      }
+    }
+    loadNotifs();
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const markSingleAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? ({ ...n, read: true }) : n));
+  };
 
   const activePersona = initialProfile.personas.find(p => p.id === selectedPersonaId) || initialProfile.personas[0];
   const userDisplayName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'Tomide Williams');
@@ -35,7 +67,6 @@ export default function Header() {
   return (
     <header className={`app-header h-20 fixed top-0 right-0 left-0 ${isSidebarCollapsed ? 'lg:left-20' : 'lg:left-64'} px-4 sm:px-8 lg:px-10 flex items-center justify-between z-30 transition-all`}>
       {/* Left: Mobile Menu Toggle & Brand / Search Bar */}
-      
       <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-lg">
         <button
           type="button"
@@ -121,11 +152,102 @@ export default function Header() {
           {theme === 'dark' ? <Sun className="w-4 h-4 text-zinc-300" /> : <Moon className="w-4 h-4 text-zinc-300" />}
         </button>
 
-        {/* Notification Bell */}
-        <button className="icon-button !w-9 !h-9 relative" aria-label="Notifications" title="Notifications">
-          <Bell className="w-4 h-4 text-zinc-300" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-cyan-400" />
-        </button>
+        {/* Notification Bell with Live Alerts Popover */}
+        <div className="relative">
+          <button 
+            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            className="icon-button !w-9 !h-9 relative" 
+            aria-label="Notifications" 
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4 text-zinc-300" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </span>
+            )}
+          </button>
+
+          {isNotifOpen && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 p-3 rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl z-50 animate-fadeIn">
+              <div className="flex items-center justify-between px-2 pb-2.5 border-b border-zinc-800/80 mb-2">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Opportunity Alerts</span>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-mono text-[10px] font-bold">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={markAllAsRead} 
+                    className="text-[10px] text-zinc-400 hover:text-white transition-colors"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-80 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-6 text-zinc-500 text-xs">
+                    No active deadline alerts at this time.
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => markSingleAsRead(n.id)}
+                      className={`p-2.5 rounded-xl border text-xs transition-all ${
+                        n.read ? 'bg-zinc-900/40 border-zinc-900 opacity-70' :
+                        n.type === 'deadline_critical' ? 'bg-rose-950/30 border-rose-800/60' :
+                        n.type === 'deadline_urgent' ? 'bg-amber-950/30 border-amber-800/60' :
+                        'bg-zinc-900 border-zinc-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-1.5 font-semibold">
+                          {n.type === 'deadline_critical' ? (
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+                          ) : n.type === 'deadline_urgent' ? (
+                            <Clock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                          ) : (
+                            <Sparkles className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                          )}
+                          <span className={
+                            n.type === 'deadline_critical' ? 'text-rose-300 text-[11px]' :
+                            n.type === 'deadline_urgent' ? 'text-amber-300 text-[11px]' :
+                            'text-zinc-200 text-[11px]'
+                          }>
+                            {n.title}
+                          </span>
+                        </div>
+                        <span className="text-[9px] text-zinc-500 font-mono">{n.timestamp}</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400 leading-relaxed pl-5 mb-1.5">
+                        {n.message}
+                      </p>
+                      {n.link && (
+                        <div className="pl-5">
+                          <Link
+                            href={n.link}
+                            onClick={() => setIsNotifOpen(false)}
+                            className="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 font-medium"
+                          >
+                            View Opportunity <ExternalLink className="w-2.5 h-2.5" />
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* User Profile / Menu */}
         <div className="relative">

@@ -1,83 +1,74 @@
-﻿import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { UserProfile } from '@/lib/types';
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { callGroq } from '@/lib/integrations/groq';
+import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
+import { createClient } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const supabase = createClient();
   try {
-    const { 
-      opportunityTitle, 
-      provider, 
-      category, 
-      documentType, 
-      profile, 
-      userId 
-    } = await req.json();
+    const { opportunityId, profileId, personaId, artifactType, customPrompt } = await req.json();
 
-    const applicantName = profile?.fullName || 'Tomide Williams';
-    const experienceYears = profile?.yearsOfExperience || 6;
-    const skillsList = (profile?.skills || ['Product Marketing', 'AI Systems', 'GTM Strategy', 'Claude Code']).slice(0, 5).join(', ');
+    let targetOpp = sampleOpportunities.find(o => o.id === opportunityId);
+    if (!targetOpp) {
+      const { data: dbOpp } = await supabase.from('opportunities').select('*').eq('id', opportunityId).maybeSingle();
+      if (dbOpp) targetOpp = dbOpp as any;
+    }
 
-    let generatedContent = '';
-    let docTitle = '';
+    const oppTitle = targetOpp?.title || 'Target Opportunity';
+    const oppOrg = targetOpp?.provider || 'Host Organization';
+    const oppDesc = targetOpp?.description || targetOpp?.summary || 'High impact opportunity';
+    const oppReqs = targetOpp?.requiredDocuments?.join(', ') || 'Application Form, Statement';
+    const oppCategory = targetOpp?.category || 'Fellowships';
 
-    if (documentType === 'motivation_statement') {
-      docTitle = `Tailored Motivation Statement - ${opportunityTitle}`;
-      generatedContent = `STATEMENT OF PURPOSE & INTENT\n` +
-        `Candidate: ${applicantName}\n` +
-        `Application For: ${opportunityTitle} (${provider})\n\n` +
-        `Dear Selection Committee,\n\n` +
-        `I am writing to formally submit my application for the ${opportunityTitle} with ${provider}. With over ${experienceYears} years of demonstrable leadership spanning Product Marketing, Go-To-Market strategy, and Agentic AI workflow systems in high-growth ecosystems, I bring a unique dual perspective of strategic product positioning and practical AI execution.\n\n` +
-        `My career has centered on architecting scalable commercial engines and empowering global teams with intelligent AI infrastructure. At Conductor (Vera Pax Technologies) and through extensive AI coaching initiatives, I have spearheaded the transformation of complex technological capabilities into high-conversion business systems, grounded in verifiable market metrics.\n\n` +
-        `This program directly aligns with my mission to bridge emerging market innovation with global opportunity networks. I look forward to contributing my expertise in ${skillsList} while actively engaging with the fellow cohort to drive measurable global impact.\n\n` +
-        `Sincerely,\n` +
-        `${applicantName}`;
-    } else if (documentType === 'cv_bullets') {
-      docTitle = `Tailored Impact Bullets - ${opportunityTitle}`;
-      generatedContent = `TARGETED CV IMPACT BULLETS (Tailored for ${opportunityTitle})\n\n` +
-        `â€¢ Architected full-funnel GTM commercial engine and Time Intelligence positioning, driving rapid qualified pipeline acceleration.\n` +
-        `â€¢ Designed and deployed autonomous Agentic AI workflows using Claude Code and n8n, cutting operational cycle times by 65%.\n` +
-        `â€¢ Spearheaded high-impact educational and product launches reaching 400+ participants with 98% satisfaction benchmarks.\n` +
-        `â€¢ Championed cross-functional alignment between engineering, product, and executive stakeholders to ship production-grade systems.\n` +
-        `â€¢ Verified core capabilities: ${skillsList}.`;
+    const candidateName = initialProfile.fullName || 'Candidate';
+    const candidateSkills = initialProfile.skills.join(', ');
+    const candidateRole = initialProfile.workHistory[0]?.role || 'Professional';
+    const candidateBio = initialProfile.workHistory.map(w => `${w.role} at ${w.company} (${w.startDate} - ${w.endDate})`).join('\n');
+
+    let prompt = '';
+    if (artifactType === 'cv_bullets') {
+      prompt = `Generate 4 high-impact, tailored CV bullet points for candidate ${candidateName} (${candidateRole}, Skills: ${candidateSkills}) applying for: "${oppTitle}" hosted by "${oppOrg}" (${oppCategory}).
+Format each bullet strictly using the framework: [Strong Action Verb] + [Context / Challenge] + [Quantified Metric / Measurable Outcome].
+Ground strictly in their real experience.`;
+    } else if (artifactType === 'abstract') {
+      prompt = `Draft an executive proposal abstract for ${candidateName} applying to "${oppTitle}" (${oppOrg}).
+Format with:
+- Title: Concise and compelling
+- Problem Statement: 2 sentences on the friction/challenge
+- Proposed Solution & Methodology: 3 sentences on execution
+- Projected Impact: Measurable outcomes.`;
     } else {
-      docTitle = `Session Abstract & Speaker Kit - ${opportunityTitle}`;
-      generatedContent = `SPEAKER PROPOSAL & KEYNOTE ABSTRACT\n` +
-        `Speaker: ${applicantName}\n` +
-        `Event: ${opportunityTitle} (${provider})\n\n` +
-        `Title: Building Agentic GTM Systems & Time Intelligence in 2026\n\n` +
-        `Abstract (300 Words):\n` +
-        `As artificial intelligence transitions from conversational prompts to autonomous agents, organizations face a critical bottleneck: translating AI capability into measurable business revenue. In this session, ${applicantName} breaks down the architecture of production-grade Agentic GTM systems, demonstrating how to eliminate discovery friction, qualify opportunities in real-time, and scale commercial engines with zero hallucination.\n\n` +
-        `Key Takeaways:\n` +
-        `1. The 5-layer framework for autonomous opportunity intelligence.\n` +
-        `2. Live case studies from emerging market AI product launches.\n` +
-        `3. Practical workflows using modern agentic toolchains.`;
+      prompt = `Write a compelling, structured Statement of Purpose / Motivation Statement for ${candidateName} applying to "${oppTitle}" at "${oppOrg}".
+Opportunity Context: ${oppDesc}
+Candidate Background: ${candidateRole} with skills in ${candidateSkills}. Work History: ${candidateBio}.
+Requirements: Ground strictly in candidate credentials, zero AI fluff or clichÃ©s, concise 3-paragraph structure.`;
     }
 
-    // Optionally auto-save drafted document to Supabase vault_documents
-    if (userId) {
-      try {
-        const supabase = createClient();
-        await supabase.from('vault_documents').insert({
-          user_id: userId,
-          name: `${docTitle.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`,
-          document_type: documentType === 'motivation_statement' ? 'Motivation Statement' : 'Master Resume / CV',
-          file_size: `${Math.round(generatedContent.length / 1024) || 1} KB`,
-          tags: ['AI Tailored', category || 'General', 'Draft'],
-          extracted_text: generatedContent
-        });
-      } catch (dbErr) {
-        console.warn('Could not auto-save tailored doc to vault:', dbErr);
-      }
+    if (customPrompt) {
+      prompt += `\nAdditional Focus Instructions: ${customPrompt}`;
     }
+
+    const groqOutput = await callGroq([
+      { role: 'system', content: 'You are Oppverse AI, an expert opportunity application tailoring strategist. Write crisp, high-conviction, tailored application materials.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.3, max_tokens: 1500 });
+
+    const finalContent = groqOutput || `Tailored application draft for ${oppTitle} at ${oppOrg}.`;
 
     return NextResponse.json({
       success: true,
-      title: docTitle,
-      content: generatedContent
+      opportunityId,
+      artifactType: artifactType || 'motivation_statement',
+      opportunityTitle: oppTitle,
+      organization: oppOrg,
+      content: finalContent,
+      characterCount: finalContent.length,
+      wordCount: finalContent.split(/\s+/).length,
+      generatedAt: new Date().toISOString()
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Tailoring generation failed' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -13,7 +13,9 @@ import {
   ArrowRight,
   Search,
   Sliders,
-  Loader2
+  Loader2,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import { sampleMissions } from '@/lib/sample-data';
 import { Mission } from '@/lib/types';
@@ -29,6 +31,8 @@ export default function MissionsPage() {
   const [newPrompt, setNewPrompt] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [runningMissionId, setRunningMissionId] = useState<string | null>(null);
+  const [sweepActive, setSweepActive] = useState(false);
 
   useEffect(() => {
     async function loadMissions() {
@@ -85,6 +89,51 @@ export default function MissionsPage() {
     }
   };
 
+  const handleRunMission = async (missionId: string, prompt: string) => {
+    setRunningMissionId(missionId);
+    try {
+      const res = await fetch('/api/missions/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          missionId,
+          prompt,
+          userId: user?.id
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMissions(prev => prev.map(m => m.id === missionId ? {
+          ...m,
+          matchCount: data.matchCount,
+          lastRunAt: data.lastRunAt
+        } : m));
+      }
+    } catch (err) {
+      console.warn('Mission run error:', err);
+    } finally {
+      setTimeout(() => setRunningMissionId(null), 800);
+    }
+  };
+
+  const handleGlobalSweep = async () => {
+    setSweepActive(true);
+    try {
+      for (const m of missions) {
+        await fetch('/api/missions/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ missionId: m.id, prompt: m.prompt, userId: user?.id })
+        });
+      }
+      setMissions(prev => prev.map(m => ({ ...m, matchCount: m.matchCount + 1, lastRunAt: new Date().toISOString() })));
+    } catch (e) {
+      console.warn('Global sweep error:', e);
+    } finally {
+      setSweepActive(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
@@ -103,12 +152,22 @@ export default function MissionsPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsCreating(true)}
-          className="btn btn-primary"
-        >
-          <Plus className="w-4 h-4" /> Create Opportunity Mission
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleGlobalSweep}
+            disabled={sweepActive}
+            className="btn btn-secondary text-xs flex items-center gap-2"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${sweepActive ? 'animate-spin text-cyan-400' : ''}`} />
+            {sweepActive ? 'Sweeping Web...' : 'Run All Missions'}
+          </button>
+          <button
+            onClick={() => setIsCreating(true)}
+            className="btn btn-primary"
+          >
+            <Plus className="w-4 h-4" /> Create Opportunity Mission
+          </button>
+        </div>
       </div>
 
       {/* Mission Creator Modal / Form */}
@@ -172,43 +231,60 @@ export default function MissionsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {missions.map((mission) => (
-            <div 
-              key={mission.id}
-              className="glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 group"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="badge badge-success">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active Agent
-                  </span>
-                  <span className="text-xs font-bold text-cyan-400 font-mono">
-                    {mission.matchCount} Matches Found
-                  </span>
+          {missions.map((mission) => {
+            const isRunning = runningMissionId === mission.id;
+            return (
+              <div 
+                key={mission.id}
+                className="glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 group"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="badge badge-success">
+                      <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'}`} /> Active Agent
+                    </span>
+                    <span className="text-xs font-bold text-cyan-400 font-mono">
+                      {mission.matchCount} Matches Found
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
+                    {mission.title}
+                  </h3>
+
+                  <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    "{mission.prompt}"
+                  </p>
                 </div>
 
-                <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
-                  {mission.title}
-                </h3>
+                <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" /> 
+                      {new Date(mission.lastRunAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <button
+                      onClick={() => handleRunMission(mission.id, mission.prompt)}
+                      disabled={isRunning}
+                      className="text-xs text-zinc-300 hover:text-white font-medium flex items-center gap-1 py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700"
+                    >
+                      <Play className={`w-3 h-3 ${isRunning ? 'text-cyan-400 animate-spin' : 'text-emerald-400'}`} />
+                      {isRunning ? 'Hunting...' : 'Run Hunt'}
+                    </button>
+                  </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
-                  "{mission.prompt}"
-                </p>
+                  <div className="flex items-center justify-end">
+                    <Link 
+                      href="/discover"
+                      className="text-cyan-400 hover:text-cyan-300 font-semibold text-xs flex items-center gap-1"
+                    >
+                      View Matches <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
               </div>
-
-              <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-slate-500" /> Active
-                </span>
-                <Link 
-                  href="/discover"
-                  className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
-                >
-                  View Matches <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -19,11 +19,14 @@ import {
   Download,
   Copy,
   Check,
-  Loader2
+  Loader2,
+  Sparkles,
+  Wand2
 } from 'lucide-react';
-import { ApplicationStatus } from '@/lib/types';
+import { ApplicationStatus, UserProfile } from '@/lib/types';
+import { initialProfile } from '@/lib/sample-data';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchUserApplications, fetchUserVaultDocs } from '@/lib/supabase/db';
+import { fetchUserApplications, fetchUserVaultDocs, fetchUserProfile } from '@/lib/supabase/db';
 
 interface TrackedApp {
   id: string;
@@ -48,9 +51,17 @@ interface VaultDoc {
 
 export default function ApplicationsPage() {
   const { user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [activeTab, setActiveTab] = useState<'kanban' | 'vault'>('kanban');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // AI Tailoring Copilot State
+  const [tailorTab, setTailorTab] = useState<'checklist' | 'tailor'>('checklist');
+  const [isTailoring, setIsTailoring] = useState(false);
+  const [tailoredDocType, setTailoredDocType] = useState<'motivation_statement' | 'cv_bullets' | 'session_abstract'>('motivation_statement');
+  const [tailoredResult, setTailoredResult] = useState<{ title: string; content: string } | null>(null);
+  const [saveVaultSuccess, setSaveVaultSuccess] = useState(false);
 
   const [apps, setApps] = useState<TrackedApp[]>([
     {
@@ -136,14 +147,11 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!user?.id) {
-        setLoading(false);
-        return;
-      }
       try {
-        const [dbApps, dbDocs] = await Promise.all([
-          fetchUserApplications(user.id),
-          fetchUserVaultDocs(user.id)
+        const [dbApps, dbDocs, userProf] = await Promise.all([
+          fetchUserApplications(user?.id),
+          fetchUserVaultDocs(user?.id),
+          fetchUserProfile(user?.id)
         ]);
         if (dbApps && dbApps.length > 0) {
           setApps(dbApps.map((a: any) => ({
@@ -168,6 +176,7 @@ export default function ApplicationsPage() {
             tags: d.tags || []
           })));
         }
+        if (userProf) setProfile(userProf);
       } catch (e) {
         console.warn('Using local application tracking fallback:', e);
       } finally {
@@ -200,6 +209,53 @@ export default function ApplicationsPage() {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const handleGenerateTailoredDoc = async () => {
+    if (!selectedApp) return;
+    setIsTailoring(true);
+    setTailoredResult(null);
+
+    try {
+      const res = await fetch('/api/applications/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opportunityTitle: selectedApp.title,
+          provider: selectedApp.provider,
+          category: selectedApp.category,
+          documentType: tailoredDocType,
+          profile,
+          userId: user?.id
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTailoredResult({
+          title: data.title,
+          content: data.content
+        });
+      }
+    } catch (err) {
+      console.warn('Tailoring generation error:', err);
+    } finally {
+      setIsTailoring(false);
+    }
+  };
+
+  const handleSaveToVault = () => {
+    if (!tailoredResult) return;
+    const newDoc: VaultDoc = {
+      id: `v_${Date.now()}`,
+      name: `${tailoredResult.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`,
+      type: tailoredDocType === 'motivation_statement' ? 'Motivation Statement' : 'Master Resume / CV',
+      size: '2 KB',
+      updatedAt: 'Just Now',
+      tags: ['AI Tailored', selectedApp.category, 'Ready']
+    };
+    setVaultDocs([newDoc, ...vaultDocs]);
+    setSaveVaultSuccess(true);
+    setTimeout(() => setSaveVaultSuccess(false), 2500);
   };
 
   return (
@@ -277,7 +333,7 @@ export default function ApplicationsPage() {
                         return (
                           <div
                             key={app.id}
-                            onClick={() => setSelectedAppId(app.id)}
+                            onClick={() => { setSelectedAppId(app.id); setTailoredResult(null); }}
                             className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-2.5 ${
                               isSelected
                                 ? 'bg-zinc-900 border-zinc-600 shadow-md'
@@ -334,49 +390,150 @@ export default function ApplicationsPage() {
                 <p className="text-xs text-zinc-400">{selectedApp.provider} â€¢ {selectedApp.category}</p>
               </div>
 
-              {/* Checklist */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Preparation Checklist
-                </h4>
-                <div className="space-y-2">
-                  {selectedApp.checklist.map(item => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleToggleChecklist(selectedApp.id, item.id)}
-                      className="w-full p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800 hover:border-zinc-700 flex items-start gap-2.5 text-left transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={item.completed}
-                        readOnly
-                        className="mt-0.5 rounded accent-emerald-500"
-                      />
-                      <span className={`text-xs ${item.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
-                        {item.task}
-                      </span>
-                    </button>
-                  ))}
+              {/* Workspace Subtabs: Checklist vs AI Copilot */}
+              <div className="flex items-center p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setTailorTab('checklist')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    tailorTab === 'checklist'
+                      ? 'bg-zinc-800 text-white shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Checklist
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTailorTab('tailor')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    tailorTab === 'tailor'
+                      ? 'bg-zinc-800 text-white shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> AI Tailoring Copilot
+                </button>
+              </div>
+
+              {tailorTab === 'checklist' ? (
+                /* Checklist View */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    {selectedApp.checklist.map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleToggleChecklist(selectedApp.id, item.id)}
+                        className="w-full p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800 hover:border-zinc-700 flex items-start gap-2.5 text-left transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={item.completed}
+                          readOnly
+                          className="mt-0.5 rounded accent-emerald-500"
+                        />
+                        <span className={`text-xs ${item.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                          {item.task}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2 pt-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Application Notes</h4>
+                    <textarea
+                      rows={3}
+                      value={selectedApp.notes}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setApps(apps.map(a => a.id === selectedApp.id ? { ...a, notes: val } : a));
+                      }}
+                      className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white outline-none focus:border-zinc-600"
+                      placeholder="Add strategy notes, referral contacts, or essay ideas..."
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* AI Tailoring Copilot View */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-zinc-300 block">Select Tailoring Target</label>
+                    <select
+                      value={tailoredDocType}
+                      onChange={(e: any) => setTailoredDocType(e.target.value)}
+                      className="w-full p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs font-semibold outline-none"
+                    >
+                      <option value="motivation_statement">Motivation Statement (800 Words)</option>
+                      <option value="cv_bullets">Tailored CV Impact Bullets</option>
+                      <option value="session_abstract">Speaking / Keynote Abstract</option>
+                    </select>
+                  </div>
 
-              {/* Notes */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Application Notes</h4>
-                <textarea
-                  rows={3}
-                  value={selectedApp.notes}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setApps(apps.map(a => a.id === selectedApp.id ? { ...a, notes: val } : a));
-                  }}
-                  className="w-full p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white outline-none focus:border-zinc-600"
-                  placeholder="Add strategy notes, referral contacts, or essay ideas..."
-                />
-              </div>
+                  <button
+                    onClick={handleGenerateTailoredDoc}
+                    disabled={isTailoring}
+                    className="btn btn-primary w-full justify-center text-xs flex items-center gap-2"
+                  >
+                    {isTailoring ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Grounding in real experience...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 text-cyan-300" /> Generate Tailored Draft
+                      </>
+                    )}
+                  </button>
 
-              <div className="pt-2">
+                  {tailoredResult && (
+                    <div className="p-3.5 rounded-xl bg-zinc-900 border border-zinc-700 space-y-3 animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Draft Generated
+                        </span>
+                        {saveVaultSuccess ? (
+                          <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Saved to Vault!
+                          </span>
+                        ) : (
+                          <button
+                            onClick={handleSaveToVault}
+                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold"
+                          >
+                            + Save to Vault
+                          </button>
+                        )}
+                      </div>
+
+                      <textarea
+                        rows={6}
+                        readOnly
+                        value={tailoredResult.content}
+                        className="w-full p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-300 font-mono leading-relaxed"
+                      />
+
+                      <button
+                        onClick={() => handleCopy('tailored_draft', tailoredResult.content)}
+                        className="btn btn-secondary w-full text-xs justify-center flex items-center gap-1.5"
+                      >
+                        {copiedId === 'tailored_draft' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied to Clipboard
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" /> Copy Draft
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-zinc-800">
                 <a
                   href="#"
                   className="w-full py-2.5 px-4 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"

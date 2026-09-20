@@ -40,7 +40,7 @@ export default function Sidebar() {
   const { isMobileMenuOpen, closeMobileMenu, isSidebarCollapsed, toggleSidebar } = useNav();
   const { user, signOut } = useAuth();
 
-  const isAuthPage = pathname === '/' || pathname.startsWith('/login') || 
+  const isAuthPage = pathname.startsWith('/login') || 
                      pathname.startsWith('/signup') || 
                      pathname.startsWith('/forgot-password') || 
                      pathname.startsWith('/reset-password') || 
@@ -48,7 +48,7 @@ export default function Sidebar() {
   if (isAuthPage) return null;
 
   const navItems = [
-    { name: 'Opportunity Universe', href: '/app', icon: LayoutGrid },
+    { name: 'Opportunity Universe', href: '/', icon: LayoutGrid },
     { name: 'Discover', href: '/discover', icon: Compass },
     { name: 'My Missions', href: '/missions', icon: Target },
     { name: 'Saved Opportunities', href: '/saved', icon: Bookmark },
@@ -120,7 +120,7 @@ export default function Sidebar() {
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href === '/' && pathname === '/app');
 
             return (
               <Link
@@ -229,4 +229,6 @@ export default function Sidebar() {
     </>
   );
 }
+
+
 

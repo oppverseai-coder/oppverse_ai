@@ -15,7 +15,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Universe', href: '/app', icon: LayoutGrid },
+    { name: 'Universe', href: '/', icon: LayoutGrid },
     { name: 'Discover', href: '/discover', icon: Compass },
     { name: 'Missions', href: '/missions', icon: Target },
     { name: 'Tracker', href: '/applications', icon: Briefcase },
@@ -29,7 +29,7 @@ export default function BottomNav() {
     >
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || (item.href === '/' && pathname === '/app');
 
         return (
           <Link
@@ -57,3 +57,4 @@ export default function BottomNav() {
     </nav>
   );
 }
+

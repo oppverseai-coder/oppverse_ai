@@ -10,7 +10,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isSidebarCollapsed } = useNav();
 
-  const isAuthPage = pathname === '/' ||
+  const isAuthPage = 
                      pathname.startsWith('/login') ||
                      pathname.startsWith('/signup') ||
                      pathname.startsWith('/forgot-password') ||
@@ -35,3 +35,4 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

@@ -12,11 +12,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import AgentMessageRenderer from '@/components/AgentMessageRenderer';
-import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
-import { Opportunity, UserProfile } from '@/lib/types';
-import { evaluateOpportunityMatch } from '@/lib/matching';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchOpportunities, fetchUserProfile } from '@/lib/supabase/db';
 
 interface ChatMessage {
   id: string;
@@ -27,30 +23,12 @@ interface ChatMessage {
 
 export default function AgentPage() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(sampleOpportunities);
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [opps, userProf] = await Promise.all([
-          fetchOpportunities(),
-          fetchUserProfile(user?.id)
-        ]);
-        if (opps && opps.length > 0) setOpportunities(opps);
-        if (userProf) setProfile(userProf);
-      } catch (e) {
-        console.warn('Agent data load error:', e);
-      }
-    }
-    loadData();
-  }, [user?.id]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
       sender: "agent",
-      text: "Hello Tomide. I am your Oppverse Opportunity Intelligence Agent. I continuously analyze your active personas, verified capabilities, and global opportunities across all 8 universes. What opportunities would you like to explore today?",
+      text: "Hello. I am your Oppverse Opportunity Intelligence Agent. I analyze your active personas, verified capabilities, and global opportunities. What would you like to explore today?",
       time: "9:00 AM"
     }
   ]);
@@ -72,7 +50,7 @@ export default function AgentPage() {
     "Show me remote PMM jobs paying global compensation"
   ];
 
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const messageToSend = text || inputVal;
     if (!messageToSend.trim()) return;
 
@@ -87,62 +65,10 @@ export default function AgentPage() {
     if (!text) setInputVal('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const q = messageToSend.toLowerCase();
-      let replyText = '';
-
-      if (q.includes('top 3') || q.includes('closing') || q.includes('best')) {
-        const ranked = opportunities
-          .map(opp => ({ opp, match: evaluateOpportunityMatch(profile, opp) }))
-          .filter(m => m.match.eligibilityStatus === 'Eligible')
-          .sort((a, b) => b.match.matchScore - a.match.matchScore)
-          .slice(0, 3);
-
-        replyText = `Here are your **Top 3 Verified Opportunities** ranked by the 5-Layer Matching Engine for your **${profile.fullName}** profile:\n\n` +
-          ranked.map((r, idx) => 
-            `**${idx + 1}. ${r.opp.title}** (${r.opp.provider})\n` +
-            `\u2022 **Fit:** ${r.match.matchScore}% Match (${r.opp.fundingStatus}: ${r.opp.fundingAmount || 'Fully Covered'})\n` +
-            `\u2022 **Deadline:** ${new Date(r.opp.deadline).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}\n` +
-            `\u2022 **Why it matches:** ${r.match.whyItMatches[0] || 'High verified capability overlap.'}\n`
-          ).join('\n') +
-          `\nWould you like me to generate a tailored preparation checklist for any of these?`;
-      } else if (q.includes('berlin') || q.includes('checklist')) {
-        replyText = "Here is your custom **Preparation Checklist** for the **Berlin AI & Emerging Tech Leadership Fellowship**:\n\n" +
-          "\u2022 **[Ready] Master CV:** Verified product marketing & AI revenue systems track record.\n" +
-          "\u2022 **[Action Required] 800-Word Motivation Statement:** Focus on Nigerian AI ecosystem case studies and Conductor time intelligence framework.\n" +
-          "\u2022 **[Action Required] 2 References:** Request endorsement from VP of Engineering / Executive collaborator.\n" +
-          "\u2022 **[Logistics]:** Fully covered (\u20ac4,200/mo stipend + roundtrip flights + housing in Berlin Mitte).\n\n" +
-          "I have structured this application in your **Applications Workspace**. Would you like to start drafting the motivation statement?";
-      } else if (q.includes('fellowship') || q.includes('scholarship') || q.includes('fully funded')) {
-        const fundedOpps = opportunities
-          .filter(o => o.fundingStatus === 'Fully Funded')
-          .slice(0, 3);
-
-        replyText = `I found **${fundedOpps.length} Verified Fully Funded Opportunities** with confirmed African / Nigerian applicant eligibility:\n\n` +
-          fundedOpps.map((opp, i) => 
-            `**${i + 1}. ${opp.title}** (${opp.provider})\n` +
-            `\u2022 **Category:** ${opp.category} \u2022 **Coverage:** ${opp.fundingAmount || '100% Funded'}\n` +
-            `\u2022 **Location:** ${opp.locationType} (${opp.hostCountry || 'Global'})\n`
-          ).join('\n') +
-          `\nAll items are pre-screened with **zero eligibility disqualifications**.`;
-      } else {
-        const matches = opportunities
-          .map(opp => ({ opp, match: evaluateOpportunityMatch(profile, opp) }))
-          .filter(m => m.opp.title.toLowerCase().includes(q) || m.opp.category.toLowerCase().includes(q) || m.opp.description.toLowerCase().includes(q))
-          .slice(0, 2);
-
-        if (matches.length > 0) {
-          replyText = `Based on your query "${messageToSend}", I matched **${matches.length} opportunities** in the Opportunity Graph:\n\n` +
-            matches.map((m, i) => 
-              `**${i + 1}. ${m.opp.title}** (${m.opp.provider})\n` +
-              `\u2022 **Match Fit:** ${m.match.matchScore}% (${m.match.matchLabel})\n` +
-              `\u2022 **Eligibility:** ${m.match.eligibilityStatus}\n`
-            ).join('\n');
-        } else {
-          replyText = `I analyzed our Opportunity Graph for "${messageToSend}". I verified 4 potential opportunities across Jobs, Fellowships, and Speaking engagements matching your active **${profile.personas[0]?.name || 'Product Marketing'}** persona. Would you like me to activate a continuous search mission for this?`;
-        }
-      }
-
+    try {
+      const response = await fetch('/api/chat/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: messageToSend }) });
+      const payload = await response.json();
+      const replyText = response.ok ? payload.reply : (payload.error || 'I could not load your opportunity context. Please try again.');
       const agentMsg: ChatMessage = {
         id: String(Date.now() + 1),
         sender: 'agent',
@@ -150,8 +76,11 @@ export default function AgentPage() {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, agentMsg]);
+    } catch {
+      setMessages(prev => [...prev, { id: String(Date.now() + 1), sender: 'agent', text: 'I could not load your opportunity context. Please try again.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
 
   return (
@@ -167,7 +96,6 @@ export default function AgentPage() {
               Oppverse AI Copilot
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
             </h1>
-            <p className="text-xs text-slate-400">Connected to Opportunity Graph &bull; 5-Layer Explainable Matching Engine</p>
           </div>
         </div>
       </div>
@@ -209,7 +137,7 @@ export default function AgentPage() {
 
             {msg.sender === 'user' && (
               <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-300 font-bold text-xs">
-                TW
+                {(user?.user_metadata?.full_name || user?.email || 'ME').split(/[\s@]/).map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()}
               </div>
             )}
           </div>

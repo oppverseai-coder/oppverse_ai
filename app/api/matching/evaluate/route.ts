@@ -1,62 +1,34 @@
-﻿import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { evaluateOpportunityMatch } from '@/lib/matching';
-import { UserProfile, Opportunity } from '@/lib/types';
+import { NextResponse } from 'next/server';
+import { loadAuthenticatedProfile } from '@/lib/personalization/server';
+import { mapDbOpportunityToModel } from '@/lib/supabase/db';
+import { structuredInterpretation } from '@/lib/personalization/interpreter';
+import { buildOpportunitySemanticText, buildProfileSemanticText, createSemanticVector, parseStoredVector } from '@/lib/personalization/semantic';
+import { evaluatePersonalizedMatch } from '@/lib/personalization/matching';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { profile, opportunities, userId } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const opportunityIds = Array.isArray(body.opportunityIds) ? body.opportunityIds : null;
+    const context = await loadAuthenticatedProfile();
+    if ('error' in context) return NextResponse.json({ error: context.error }, { status: context.status });
 
-    if (!profile || !opportunities || !Array.isArray(opportunities)) {
-      return NextResponse.json({ error: 'Profile and opportunities array required' }, { status: 400 });
-    }
-
-    // Evaluate 5-layer matches across all opportunities
-    const matches = opportunities.map((opp: Opportunity) => {
-      const match = evaluateOpportunityMatch(profile, opp);
-      return {
-        ...match,
-        opportunityId: opp.id
-      };
+    let query = context.supabase.from('opportunities').select('*');
+    if (opportunityIds?.length) query = query.in('id', opportunityIds);
+    const { data: rows, error } = await query;
+    if (error) throw error;
+    const interpreted = Object.keys(context.profileRow.interpreted_profile || {}).length
+      ? context.profileRow.interpreted_profile
+      : structuredInterpretation(context.profile);
+    const profileVector = parseStoredVector(context.profileRow.embedding) || createSemanticVector(buildProfileSemanticText(context.profile, interpreted));
+    const matches = (rows || []).map((row) => {
+      const opportunity = mapDbOpportunityToModel(row);
+      const opportunityVector = parseStoredVector(row.embedding) || createSemanticVector(buildOpportunitySemanticText(opportunity));
+      return evaluatePersonalizedMatch(context.profile, interpreted, opportunity, profileVector, opportunityVector);
     });
-
-    // If authenticated, persist high-affinity matches to Supabase matches table
-    if (userId) {
-      try {
-        const supabase = createClient();
-        const rowsToUpsert = matches
-          .filter(m => m.matchScore >= 60 || m.eligibilityStatus === 'Eligible')
-          .slice(0, 20)
-          .map(m => ({
-            user_id: userId,
-            opportunity_id: m.opportunityId,
-            match_score: m.matchScore,
-            match_label: m.matchLabel,
-            is_eligible: m.eligibilityStatus === 'Eligible',
-            eligibility_status: m.eligibilityStatus,
-            why_it_matches: m.whyItMatches,
-            watch_outs: m.watchOuts,
-            subscores: m.subScores || {},
-            readiness_score: m.readinessScore,
-            action_priority: m.actionPriority
-          }));
-
-        if (rowsToUpsert.length > 0) {
-          await supabase.from('matches').upsert(rowsToUpsert, { onConflict: 'user_id,opportunity_id' });
-        }
-      } catch (dbErr) {
-        console.warn('Could not cache matches to DB:', dbErr);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      count: matches.length,
-      matches
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Evaluation failed' }, { status: 500 });
+    return NextResponse.json({ success: true, count: matches.length, matches });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Evaluation failed' }, { status: 500 });
   }
 }

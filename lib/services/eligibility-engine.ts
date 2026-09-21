@@ -20,9 +20,9 @@ export function evaluateDeterministicEligibility(
   const passedGates: string[] = [];
   const watchOuts: string[] = [];
 
-  const userCitizenship = profile.citizenship || ['Nigeria'];
-  const userCountry = profile.countryOfResidence || 'Nigeria';
-  const userExp = profile.yearsOfExperience || 3;
+  const userCitizenship = profile.citizenship || [];
+  const userCountry = profile.countryOfResidence || '';
+  const userExp = profile.yearsOfExperience || 0;
 
   // Gate 1: Citizenship / Country Restrictions
   const eligibleCountries = opportunity.eligibleNationalities || ['All'];
@@ -36,7 +36,9 @@ export function evaluateDeterministicEligibility(
       ec.toLowerCase() === userCountry.toLowerCase() || ec.toLowerCase().includes('africa')
     );
 
-    if (hasCitizenshipMatch || hasResidenceMatch) {
+    if (userCitizenship.length === 0 && !userCountry) {
+      watchOuts.push('Citizenship or residence is missing; eligibility requires verification.');
+    } else if (hasCitizenshipMatch || hasResidenceMatch) {
       passedGates.push(`Citizenship/Residency verified (${userCountry} eligible)`);
     } else {
       failedGates.push(`Restricted to citizens of: ${eligibleCountries.join(', ')}`);

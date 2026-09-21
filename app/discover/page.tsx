@@ -13,19 +13,29 @@ import {
   LayoutGrid,
   Loader2
 } from 'lucide-react';
-import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
-import { evaluateOpportunityMatch } from '@/lib/matching';
 import { Opportunity, UserProfile } from '@/lib/types';
+import { createEmptyProfile } from '@/lib/empty-data';
+import { PersonalizedMatch } from '@/lib/personalization/matching';
 import OpportunityModal from '@/components/OpportunityModal';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchOpportunities, fetchUserProfile } from '@/lib/supabase/db';
+
+function decodeDisplayText(value: string) {
+  return value
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+}
 
 export default function DiscoverPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(sampleOpportunities);
+  const [profile, setProfile] = useState<UserProfile>(() => createEmptyProfile());
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [matches, setMatches] = useState<Record<string, PersonalizedMatch>>({});
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -37,15 +47,22 @@ export default function DiscoverPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      setLoadError('');
       try {
-        const [opps, userProf] = await Promise.all([
-          fetchOpportunities(selectedCategory),
-          fetchUserProfile(user?.id)
-        ]);
-        if (opps && opps.length > 0) setOpportunities(opps);
-        if (userProf) setProfile(userProf);
+        if (!user?.id) return;
+        const params = new URLSearchParams();
+        if (selectedCategory !== 'All') params.set('category', selectedCategory);
+        const response = await fetch(`/api/personalization/feed?${params.toString()}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Verified opportunities could not be loaded.');
+        const payload = await response.json();
+        setProfile(payload.profile);
+        setOpportunities(payload.results.map((item: { opportunity: Opportunity }) => item.opportunity));
+        setMatches(Object.fromEntries(payload.results.map((item: { opportunity: Opportunity; match: PersonalizedMatch }) => [item.opportunity.id, item.match])));
       } catch (err) {
         console.warn('Error fetching discover data:', err);
+        setOpportunities([]);
+        setMatches({});
+        setLoadError(err instanceof Error ? err.message : 'Verified opportunities could not be loaded.');
       } finally {
         setLoading(false);
       }
@@ -170,10 +187,16 @@ export default function DiscoverPage() {
             <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
             <span className="text-xs">Loading verified opportunities...</span>
           </div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-8 text-center">
+            <p className="text-sm font-semibold text-white">Discover is temporarily unavailable</p>
+            <p className="mt-2 text-xs text-zinc-400">{loadError}</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             {filteredOpportunities.map((opp) => {
-              const match = evaluateOpportunityMatch(profile, opp);
+              const match = matches[opp.id];
+              if (!match) return null;
               const isSaved = savedOppIds.includes(opp.id);
               const isIneligible = match.eligibilityStatus === 'Ineligible';
 
@@ -181,32 +204,36 @@ export default function DiscoverPage() {
                 <div
                   key={opp.id}
                   onClick={() => handleOpenDetail(opp)}
-                  className={`opportunity-card glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border cursor-pointer flex flex-col justify-between space-y-4 group transition-all duration-200 ${
+                  className={`opportunity-card glass-card p-5 sm:p-6 rounded-xl border cursor-pointer flex flex-col justify-between min-h-[278px] gap-6 group transition-all duration-200 ${
                     isIneligible ? 'border-rose-900/40 bg-rose-950/10' : ''
                   }`}
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                          {opp.category}
-                        </span>
-                        <span className="inline-block w-1 h-1 rounded-full bg-zinc-600 mx-1" />
-                        <span className="text-xs text-zinc-400 font-medium">
-                          {opp.provider}
-                        </span>
+                  <div className="space-y-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 flex-[0_0_36px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-semibold text-white">
+                          {opp.provider.trim().charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold text-zinc-200">
+                            {decodeDisplayText(opp.provider)}
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                            {opp.category}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                          isIneligible
-                            ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
-                            : match.matchScore >= 80
-                            ? 'match-badge'
-                            : 'match-badge-neutral'
-                        }`}>
-                          {match.matchScore}% Match
-                        </span>
+                        <div className="w-[74px] text-right">
+                          <p className="text-sm font-semibold text-white">{match.matchScore}% fit</p>
+                          <div className="mt-1.5 ml-auto h-1 w-14 overflow-hidden rounded-full bg-zinc-800">
+                            <div
+                              className="h-full rounded-full bg-zinc-300"
+                              style={{ width: `${Math.max(8, match.matchScore)}%` }}
+                            />
+                          </div>
+                        </div>
                         <button
                           onClick={(e) => handleToggleSave(opp.id, e)}
                           className={`icon-button !w-8 !h-8 !min-h-0 !flex-[0_0_32px] ${
@@ -221,31 +248,38 @@ export default function DiscoverPage() {
                       </div>
                     </div>
 
-                    <h3 className="text-base font-bold text-white group-hover:text-zinc-200 transition-colors">
-                      {opp.title}
-                    </h3>
+                    <div>
+                      <h3 className="text-[18px] font-semibold text-white group-hover:text-zinc-200 transition-colors leading-7 line-clamp-2">
+                        {decodeDisplayText(opp.title)}
+                      </h3>
 
-                    <p className="text-xs text-zinc-400 mt-2 line-clamp-2 leading-relaxed">
-                      {opp.summary}
-                    </p>
+                      <p className="text-[13px] text-zinc-400 mt-2 line-clamp-2 leading-5">
+                        {decodeDisplayText(opp.summary)}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Metadata Pills */}
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400 pt-2 border-t border-zinc-800/60">
-                    <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-zinc-500" />
-                      {opp.locationType}
-                    </span>
-                    <span className="metadata-chip px-2 py-0.5 rounded-md">
-                      <Coins className="w-3 h-3 text-cyan-400 inline mr-1" />
-                      {opp.fundingStatus}
-                    </span>
-                    <span className="metadata-chip px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-zinc-500" />
-                      {new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Verified
+                  <div className="flex flex-col gap-4 border-t border-zinc-800/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-400">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-zinc-500" />
+                        {opp.locationType}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-zinc-500" />
+                        {opp.fundingStatus}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                        {new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-emerald-400">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Verified
+                      </span>
+                    </div>
+
+                    <span className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-white group-hover:translate-x-0.5 transition-transform">
+                      View details <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </div>

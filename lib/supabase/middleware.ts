@@ -60,9 +60,48 @@ export async function updateSession(request: NextRequest) {
                      request.nextUrl.pathname.startsWith('/forgot-password') ||
                      request.nextUrl.pathname.startsWith('/reset-password');
 
+  const protectedRoutes = [
+    '/app',
+    '/discover',
+    '/missions',
+    '/saved',
+    '/applications',
+    '/agent',
+    '/profile',
+    '/onboarding',
+  ];
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`)
+  );
+
+  let onboardingCompleted: boolean | null = user?.user_metadata?.onboarding_completed ?? null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .maybeSingle();
+    onboardingCompleted = onboardingCompleted ?? profile?.onboarding_completed ?? null;
+  }
+
   // If logged in and trying to access auth pages, redirect to dashboard
   if (user && isAuthPage) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL(onboardingCompleted === false ? '/onboarding' : '/app', request.url));
+  }
+
+  if (!user && isProtectedRoute) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('next', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+
+  if (user && onboardingCompleted === false && isProtectedRoute && request.nextUrl.pathname !== '/onboarding') {
+    return NextResponse.redirect(new URL('/onboarding', request.url));
+  }
+
+  if (user && onboardingCompleted === true && request.nextUrl.pathname === '/onboarding') {
+    return NextResponse.redirect(new URL('/app', request.url));
   }
 
   return response;

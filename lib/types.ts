@@ -79,6 +79,7 @@ export interface UserProfile {
   relocationPreference: boolean;
   remotePreference: "Remote" | "Hybrid" | "On-site" | "Any";
   profileStrength: number;
+  onboardingCompleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }

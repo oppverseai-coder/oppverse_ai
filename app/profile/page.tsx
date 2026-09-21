@@ -24,16 +24,16 @@ import {
   Sparkles,
   Check
 } from 'lucide-react';
-import { initialProfile as sampleProfile } from '@/lib/sample-data';
 import { UserProfile, OpportunityCategory, Persona } from '@/lib/types';
+import { createEmptyProfile } from '@/lib/empty-data';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchUserProfile, updateUserProfile } from '@/lib/supabase/db';
+import { activateUserPersona, createUserPersona, fetchUserProfile, updateUserProfile } from '@/lib/supabase/db';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [profile, setProfile] = useState<UserProfile>(sampleProfile);
+  const [profile, setProfile] = useState<UserProfile>(() => createEmptyProfile());
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'personas' | 'cv-upload' | 'universes' | 'experience'>('personas');
   
@@ -48,6 +48,9 @@ export default function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newSkill, setNewSkill] = useState('');
+  const [isAddingPersona, setIsAddingPersona] = useState(false);
+  const [newPersonaName, setNewPersonaName] = useState('');
+  const [newPersonaRole, setNewPersonaRole] = useState('');
 
   useEffect(() => {
     async function loadProfile() {
@@ -75,6 +78,35 @@ export default function ProfilePage() {
     'Speaking', 
     'Competitions'
   ];
+
+  const handleActivatePersona = async (personaId: string) => {
+    setProfile((current) => ({ ...current, activePersonaId: personaId }));
+    if (user?.id) await activateUserPersona(user.id, personaId);
+  };
+
+  const handleCreatePersona = async () => {
+    if (!user?.id || !newPersonaName.trim() || !newPersonaRole.trim()) return;
+    const created = await createUserPersona(user.id, {
+      name: newPersonaName.trim(),
+      role: newPersonaRole.trim(),
+      targetUniverses: profile.selectedUniverses.slice(0, 4),
+      skills: profile.skills,
+    });
+    const persona: Persona = {
+      id: created.id,
+      name: created.name,
+      role: created.role,
+      headline: created.headline || created.role,
+      targetUniverses: created.target_categories || [],
+      goals: created.goals || [],
+      skills: created.skills || [],
+      isDefault: false,
+    };
+    setProfile((current) => ({ ...current, personas: [...current.personas, persona] }));
+    setNewPersonaName('');
+    setNewPersonaRole('');
+    setIsAddingPersona(false);
+  };
 
   const handleUniverseToggle = (cat: OpportunityCategory) => {
     const universes = profile.selectedUniverses || [];
@@ -120,7 +152,6 @@ export default function ProfilePage() {
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
-        if (user?.id) formData.append('userId', user.id);
 
         res = await fetch('/api/parse-cv', {
           method: 'POST',
@@ -131,8 +162,7 @@ export default function ProfilePage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            cvText: cvInputText || "Sample Executive CV Content",
-            userId: user?.id 
+            cvText: cvInputText,
           })
         });
       }
@@ -296,10 +326,18 @@ export default function ProfilePage() {
                       Switch between your active professional identities to reshape your opportunity feed.
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
-                    {(profile.personas || []).length} Active Personas
-                  </span>
+                  <button type="button" onClick={() => setIsAddingPersona((value) => !value)} className="btn btn-secondary text-xs">
+                    <Plus className="icon-xs" /> Add persona
+                  </button>
                 </div>
+
+                {isAddingPersona && (
+                  <div className="grid md:grid-cols-[1fr_1fr_auto] gap-2 mb-4 p-3 rounded-xl border border-zinc-800 bg-zinc-900/60">
+                    <input className="onboarding-input" value={newPersonaName} onChange={(e) => setNewPersonaName(e.target.value)} placeholder="Persona name" />
+                    <input className="onboarding-input" value={newPersonaRole} onChange={(e) => setNewPersonaRole(e.target.value)} placeholder="Target role or direction" />
+                    <button type="button" onClick={handleCreatePersona} disabled={!newPersonaName.trim() || !newPersonaRole.trim()} className="btn btn-primary disabled:opacity-40">Create</button>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {(profile.personas || []).map((persona) => {
@@ -307,7 +345,7 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={persona.id}
-                        onClick={() => setProfile(prev => ({ ...prev, activePersonaId: persona.id }))}
+                        onClick={() => handleActivatePersona(persona.id)}
                         className={`p-4 rounded-xl cursor-pointer transition-all border ${
                           isSelected
                             ? 'bg-zinc-800 border-zinc-600'

@@ -16,7 +16,7 @@ export function evaluateOpportunityMatch(profile: UserProfile, opp: Opportunity)
   let eligibilityReason: string | undefined = undefined;
   let eligibilityStatus: EligibilityStatus = "Eligible";
 
-  const userCitizenship = profile.citizenship || ["Nigeria"];
+  const userCitizenship = profile.citizenship || [];
   const oppEligible = opp.eligibleNationalities || ["All"];
 
   // Regional keyword checks
@@ -37,9 +37,12 @@ export function evaluateOpportunityMatch(profile: UserProfile, opp: Opportunity)
     userCitizenship.some(uc => uc.toLowerCase() === country.toLowerCase())
   );
 
-  const hasCitizenshipMatch = isGlobalOpportunity || isAfricanRegional || hasSpecificCountryMatch;
+  const hasCitizenshipMatch = isGlobalOpportunity || (userCitizenship.length > 0 && (isAfricanRegional || hasSpecificCountryMatch));
 
-  if (!hasCitizenshipMatch) {
+  if (!hasCitizenshipMatch && userCitizenship.length === 0) {
+    eligibilityStatus = "Eligibility Unclear";
+    eligibilityReason = "Citizenship is required to verify this opportunity's eligibility.";
+  } else if (!hasCitizenshipMatch) {
     isEligible = false;
     eligibilityStatus = "Ineligible";
     eligibilityReason = `Restricted to applicants with citizenship in: ${oppEligible.join(", ")}.`;
@@ -72,10 +75,10 @@ export function evaluateOpportunityMatch(profile: UserProfile, opp: Opportunity)
 
   // A. Category & Persona Alignment (Weight: 25%)
   const activePersona = profile.personas.find(p => p.id === profile.activePersonaId) || profile.personas[0];
-  const isTargetUniverse = activePersona.targetUniverses.includes(opp.category);
+  const isTargetUniverse = activePersona?.targetUniverses?.includes(opp.category) || false;
   const isGeneralUniverse = profile.selectedUniverses.includes(opp.category);
   
-  let categoryScore = 60;
+  let categoryScore = 15;
   if (isTargetUniverse) {
     categoryScore = 98;
     whyItMatches.push(`Directly matches your active persona (${activePersona.name}) target categories.`);
@@ -95,19 +98,17 @@ export function evaluateOpportunityMatch(profile: UserProfile, opp: Opportunity)
     );
   });
 
-  let skillsScore = 50;
+  let skillsScore = 10;
   if (matchedSkills.length >= 3) {
     skillsScore = 96;
     whyItMatches.push(`Strong verified skills overlap: ${matchedSkills.slice(0, 3).join(", ")}.`);
   } else if (matchedSkills.length >= 1) {
     skillsScore = 82;
     whyItMatches.push(`Relevant domain capability in ${matchedSkills.join(", ")}.`);
-  } else {
-    skillsScore = 60;
   }
 
   // C. Seniority & Experience Fit (Weight: 20%)
-  let seniorityScore = 75;
+  let seniorityScore = 55;
   const userExp = profile.yearsOfExperience;
   
   if (opp.experienceRequired) {
@@ -129,7 +130,7 @@ export function evaluateOpportunityMatch(profile: UserProfile, opp: Opportunity)
       seniorityScore = 88;
     }
   } else {
-    seniorityScore = userExp >= 4 ? 90 : 80;
+    seniorityScore = 55;
   }
 
   // D. Financial & Compensation Fit (Weight: 10%)
@@ -268,7 +269,8 @@ export function evaluateOpportunityMatch(profile: UserProfile, opp: Opportunity)
     };
   }
 
-  const finalScore = Math.min(Math.round(weightedOverall), 99);
+  const hasRelevanceEvidence = isTargetUniverse || isGeneralUniverse || matchedSkills.length > 0;
+  const finalScore = Math.min(hasRelevanceEvidence ? Math.round(weightedOverall) : 39, 99);
 
   let matchLabel: MatchLabel = "Good Match";
   if (finalScore >= 90) matchLabel = "Exceptional Match";

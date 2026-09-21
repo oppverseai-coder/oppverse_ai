@@ -39,6 +39,7 @@ export default function SignupPage() {
         options: {
           data: {
             full_name: fullName,
+            onboarding_completed: false,
           },
         },
       });
@@ -49,7 +50,18 @@ export default function SignupPage() {
         return;
       }
 
-      // If user created, route directly into onboarding setup
+      if (data.session) {
+        router.push('/onboarding');
+        router.refresh();
+        return;
+      }
+
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError || !signInData.session) {
+        setErrorMsg('Your account was created, but automatic sign-in is disabled. Turn off email confirmation in Supabase Auth to enable seamless onboarding.');
+        setIsLoading(false);
+        return;
+      }
       router.push('/onboarding');
       router.refresh();
     } catch (err: any) {
@@ -59,12 +71,12 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-9 h-9 object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform" />
+            <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="brand-icon w-9 h-9 object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform" />
             <span className="font-display font-semibold text-2xl tracking-tight text-white">
               Oppverse AI
             </span>
@@ -117,7 +129,7 @@ export default function SignupPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Tomide Williams"
+                  placeholder="Your full name"
                   required
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-zinc-500 text-white text-xs outline-none transition-all placeholder:text-zinc-600"
                 />

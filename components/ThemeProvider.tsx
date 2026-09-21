@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 type Theme = 'dark' | 'light';
 
@@ -13,15 +14,23 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [theme, setThemeState] = useState<Theme>('dark');
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('oppverse-theme');
     const initialTheme: Theme = storedTheme === 'light' ? 'light' : 'dark';
-    setThemeState(initialTheme);
-  }, []);
+    const appliedTheme: Theme = pathname === '/' ? 'dark' : initialTheme;
+    const root = document.documentElement;
+    root.dataset.themeScope = pathname === '/' ? 'landing' : 'product';
+    root.classList.remove('light', 'dark');
+    root.classList.add(appliedTheme);
+    root.style.colorScheme = appliedTheme;
+    setThemeState(appliedTheme);
+  }, [pathname]);
 
   const setTheme = (nextTheme: Theme) => {
+    if (pathname === '/') return;
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(nextTheme);
     document.documentElement.style.colorScheme = nextTheme;
@@ -35,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setTheme,
       toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
     }),
-    [theme]
+    [theme, pathname]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -1,10 +1,8 @@
 ﻿import { createClient } from './client';
 import { Opportunity, UserProfile, Mission, ApplicationStatus, Persona, OpportunityCategory } from '@/lib/types';
-import { sampleOpportunities, initialProfile, sampleMissions } from '@/lib/sample-data';
-import { evaluateOpportunityMatch } from '@/lib/matching';
 
 /**
- * Fetch all opportunities from Supabase with graceful fallback
+ * Fetch verified opportunities from Supabase. Production callers never receive demo data.
  */
 export async function fetchOpportunities(category?: string, searchQuery?: string): Promise<Opportunity[]> {
   const supabase = createClient();
@@ -16,21 +14,8 @@ export async function fetchOpportunities(category?: string, searchQuery?: string
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      let opps = sampleOpportunities;
-      if (category && category !== 'All') {
-        opps = opps.filter(o => o.category.toLowerCase() === category.toLowerCase());
-      }
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        opps = opps.filter(o => 
-          o.title.toLowerCase().includes(q) || 
-          o.provider.toLowerCase().includes(q) || 
-          o.description.toLowerCase().includes(q)
-        );
-      }
-      return opps;
-    }
+    if (error) throw error;
+    if (!data) return [];
 
     let results = data.map(mapDbOpportunityToModel);
     if (searchQuery) {
@@ -43,16 +28,16 @@ export async function fetchOpportunities(category?: string, searchQuery?: string
     }
     return results;
   } catch (err) {
-    console.warn('Using fallback opportunity dataset:', err);
-    return sampleOpportunities;
+    console.warn('Opportunity fetch failed:', err);
+    return [];
   }
 }
 
 /**
- * Fetch user profile from Supabase with fallback to local state
+ * Fetch the authenticated user's profile without cross-user/demo fallbacks.
  */
-export async function fetchUserProfile(userId?: string): Promise<UserProfile> {
-  if (!userId) return initialProfile;
+export async function fetchUserProfile(userId?: string): Promise<UserProfile | null> {
+  if (!userId) return null;
 
   const supabase = createClient();
   try {
@@ -62,7 +47,7 @@ export async function fetchUserProfile(userId?: string): Promise<UserProfile> {
       .eq('id', userId)
       .single();
 
-    if (error || !profile) return initialProfile;
+    if (error || !profile) return null;
 
     // Fetch user personas
     const { data: personas } = await supabase
@@ -79,35 +64,131 @@ export async function fetchUserProfile(userId?: string): Promise<UserProfile> {
       goals: p.goals || [],
       skills: p.skills || [],
       isDefault: p.is_active || false
-    })) : initialProfile.personas;
+    })) : [];
 
     return {
       id: profile.id,
-      fullName: profile.full_name || initialProfile.fullName,
-      email: profile.email || initialProfile.email,
+      fullName: profile.full_name || '',
+      email: profile.email || '',
       avatarUrl: profile.avatar_url,
-      citizenship: profile.citizenship?.length ? profile.citizenship : initialProfile.citizenship,
-      countryOfResidence: profile.country_of_residence || initialProfile.countryOfResidence,
-      city: profile.city || initialProfile.city,
-      yearsOfExperience: profile.years_experience !== null && profile.years_experience !== undefined ? profile.years_experience : initialProfile.yearsOfExperience,
-      careerLevel: profile.career_level || initialProfile.careerLevel,
-      education: profile.education || initialProfile.education,
-      workHistory: profile.work_history || initialProfile.workHistory,
+      citizenship: profile.citizenship || [],
+      countryOfResidence: profile.country_of_residence || '',
+      city: profile.city || '',
+      yearsOfExperience: profile.years_experience || 0,
+      careerLevel: profile.career_level || 'Early-Career',
+      education: profile.education || [],
+      workHistory: profile.work_history || [],
       languages: ['English (Fluent)'],
-      skills: profile.skills?.length ? profile.skills : initialProfile.skills,
+      skills: profile.skills || [],
       personas: mappedPersonas,
-      activePersonaId: mappedPersonas[0]?.id || 'persona_pmm',
-      selectedUniverses: (profile.opportunity_interests?.length ? profile.opportunity_interests : initialProfile.selectedUniverses) as OpportunityCategory[],
-      goals: profile.goals?.length ? profile.goals : initialProfile.goals,
+      activePersonaId: profile.active_persona_id || mappedPersonas.find((p) => p.isDefault)?.id || mappedPersonas[0]?.id || '',
+      selectedUniverses: (profile.opportunity_interests || []) as OpportunityCategory[],
+      goals: profile.goals || [],
       remotePreference: profile.remote_preference || 'Any',
       relocationPreference: profile.relocation_preference || false,
-      profileStrength: profile.profile_strength || initialProfile.profileStrength,
+      profileStrength: profile.profile_strength || 0,
+      onboardingCompleted: profile.onboarding_completed || false,
       createdAt: profile.created_at || new Date().toISOString(),
       updatedAt: profile.updated_at || new Date().toISOString()
     };
   } catch (err) {
     console.warn('Error fetching user profile:', err);
-    return initialProfile;
+    return null;
+  }
+}
+
+export async function completeUserOnboarding(userId: string, input: {
+  fullName: string;
+  citizenship: string;
+  countryOfResidence: string;
+  city: string;
+  yearsOfExperience: number;
+  careerLevel: UserProfile['careerLevel'];
+  skills: string[];
+  goals: string[];
+  selectedUniverses: OpportunityCategory[];
+  remotePreference: UserProfile['remotePreference'];
+  relocationPreference: boolean;
+  personaName: string;
+  personaRole: string;
+}) {
+  const supabase = createClient();
+  const profileStrength = Math.min(100, 45 + (input.skills.length * 4) + (input.goals.length * 5) + (input.selectedUniverses.length * 2));
+
+  const { error: profileError } = await supabase.from('profiles').update({
+    full_name: input.fullName,
+    citizenship: input.citizenship ? [input.citizenship] : [],
+    country_of_residence: input.countryOfResidence,
+    city: input.city,
+    years_experience: input.yearsOfExperience,
+    career_level: input.careerLevel,
+    skills: input.skills,
+    goals: input.goals,
+    opportunity_interests: input.selectedUniverses,
+    remote_preference: input.remotePreference,
+    relocation_preference: input.relocationPreference,
+    profile_strength: profileStrength,
+    updated_at: new Date().toISOString(),
+  }).eq('id', userId);
+
+  if (profileError) throw profileError;
+
+  const { error: clearPersonaError } = await supabase.from('personas').delete().eq('user_id', userId);
+  if (clearPersonaError) throw clearPersonaError;
+  const { data: persona, error: personaError } = await supabase.from('personas').insert({
+    user_id: userId,
+    name: input.personaName,
+    role: input.personaRole,
+    target_categories: input.selectedUniverses,
+    skills: input.skills,
+    location_preference: input.remotePreference,
+    is_active: true,
+  }).select('id').single();
+
+  if (personaError) throw personaError;
+
+  const { error: metadataError } = await supabase.auth.updateUser({
+    data: { onboarding_completed: true },
+  });
+  if (metadataError) throw metadataError;
+
+  try {
+    await fetch('/api/personalization/refresh', { method: 'POST' });
+  } catch (error) {
+    console.warn('Profile saved; semantic personalization will retry later.', error);
+  }
+}
+
+export async function createUserPersona(userId: string, input: {
+  name: string;
+  role: string;
+  targetUniverses: OpportunityCategory[];
+  skills?: string[];
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase.from('personas').insert({
+    user_id: userId,
+    name: input.name,
+    role: input.role,
+    target_categories: input.targetUniverses,
+    skills: input.skills || [],
+    is_active: false,
+  }).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function activateUserPersona(userId: string, personaId: string) {
+  const supabase = createClient();
+  const { error: clearError } = await supabase.from('personas').update({ is_active: false }).eq('user_id', userId);
+  if (clearError) throw clearError;
+  const { error } = await supabase.from('personas').update({ is_active: true }).eq('id', personaId).eq('user_id', userId);
+  if (error) throw error;
+  await supabase.from('profiles').update({ active_persona_id: personaId, updated_at: new Date().toISOString() }).eq('id', userId);
+  try {
+    await fetch('/api/personalization/refresh', { method: 'POST' });
+  } catch (refreshError) {
+    console.warn('Persona activated; semantic personalization will retry later.', refreshError);
   }
 }
 
@@ -138,6 +219,13 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
     .select();
 
   if (error) console.error('Failed to update profile:', error);
+  if (!error) {
+    try {
+      await fetch('/api/personalization/refresh', { method: 'POST' });
+    } catch (refreshError) {
+      console.warn('Profile updated; semantic personalization will retry later.', refreshError);
+    }
+  }
   return { data, error };
 }
 
@@ -145,7 +233,7 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
  * Fetch user autonomous search missions
  */
 export async function fetchUserMissions(userId?: string): Promise<Mission[]> {
-  if (!userId) return sampleMissions;
+  if (!userId) return [];
 
   const supabase = createClient();
   try {
@@ -155,7 +243,8 @@ export async function fetchUserMissions(userId?: string): Promise<Mission[]> {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) return sampleMissions;
+    if (error) throw error;
+    if (!data) return [];
 
     return data.map((m: any) => ({
       id: m.id,
@@ -170,7 +259,7 @@ export async function fetchUserMissions(userId?: string): Promise<Mission[]> {
       createdAt: m.created_at || new Date().toISOString()
     }));
   } catch (err) {
-    return sampleMissions;
+    return [];
   }
 }
 
@@ -294,7 +383,7 @@ export async function saveUserVaultDoc(userId: string, doc: {
 /**
  * Helper to map DB opportunity row to frontend model
  */
-function mapDbOpportunityToModel(row: any): Opportunity {
+export function mapDbOpportunityToModel(row: any): Opportunity {
   return {
     id: row.id,
     title: row.title,

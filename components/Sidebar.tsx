@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutGrid, 
-  Compass, 
+  Search, 
   Target, 
   Bookmark, 
   Briefcase, 
@@ -45,11 +45,11 @@ export default function Sidebar() {
                      pathname.startsWith('/forgot-password') || 
                      pathname.startsWith('/reset-password') || 
                      pathname.startsWith('/onboarding');
-  if (isAuthPage) return null;
+  if (pathname === '/' || isAuthPage) return null;
 
   const navItems = [
-    { name: 'Opportunity Universe', href: '/', icon: LayoutGrid },
-    { name: 'Discover', href: '/discover', icon: Compass },
+    { name: 'Opportunity Universe', href: '/app', icon: LayoutGrid },
+    { name: 'Discover', href: '/discover', icon: Search },
     { name: 'My Missions', href: '/missions', icon: Target },
     { name: 'Saved Opportunities', href: '/saved', icon: Bookmark },
     { name: 'Applications & Tracker', href: '/applications', icon: Briefcase },
@@ -69,12 +69,12 @@ export default function Sidebar() {
               className="sidebar-link flex min-h-10 w-full items-center justify-center py-2 rounded-xl hover:bg-zinc-900 border border-transparent transition-all group"
               title="Oppverse AI"
             >
-              <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-7 h-7 object-contain rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
+              <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="brand-icon w-7 h-7 object-contain rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
             </div>
           ) : (
             <div className="flex items-center justify-between w-full min-w-0">
-              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-2.5 group whitespace-nowrap min-w-0" title="Oppverse AI">
-                <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-7 h-7 object-contain rounded-lg flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform" />
+              <Link href="/app" onClick={closeMobileMenu} className="flex items-center gap-2.5 group whitespace-nowrap min-w-0" title="Oppverse AI">
+                <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="brand-icon w-7 h-7 object-contain rounded-lg flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform" />
                 <span className="font-display font-semibold text-lg tracking-tight text-white whitespace-nowrap">
                   Oppverse AI
                 </span>
@@ -120,7 +120,7 @@ export default function Sidebar() {
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href === '/' && pathname === '/app');
+            const isActive = pathname === item.href;
 
             return (
               <Link

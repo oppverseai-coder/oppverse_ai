@@ -1,12 +1,39 @@
 ﻿# OPPVERSE AI â€” WORKING MEMORY (LATEST STATE)
 
-**Last Updated:** 2026-09-20 11:50 WAT  
+**Last Updated:** 2026-09-21 06:12 WAT  
 **Project:** Oppverse AI (`C:\Projects\oppverse_ai`)  
 **Product Lead:** Tomide Williams  
 
 ---
 
 ## ðŸ“Œ 1. Latest Action Carried Out
+
+- **Action:** Implemented the first functional AI-assisted personalization pipeline while preserving the existing UI and onboarding flow.
+- **Identity safety:** Removed all imports of `lib/sample-data.ts` from production application paths. Missing data now produces empty/error states rather than another person's profile or recommendations.
+- **AI interpretation:** Added server-side Groq profile and CV interpretation with evidence validation. Explicit structured facts remain authoritative and unsupported AI attributes are discarded.
+- **Semantic layer:** Added canonical profile/opportunity representations and stored 1536-dimensional semantic vectors. Migration `005_ai_personalization.sql` is applied locally and remotely; all 40 opportunities were backfilled.
+- **Hybrid matching:** Deterministic eligibility remains authoritative. Ranking now combines existing structured matching, semantic profile similarity, and stated-goal alignment.
+- **Connected surfaces:** Opportunity Universe, Discover, Missions, Oppverse AI, CV parsing, and application tailoring now use authenticated user context and real database records.
+- **Isolation:** Private server APIs derive identity from the Supabase session rather than trusting client-supplied user IDs. Anonymous personalization requests return HTTP 401.
+- **Verification:** Route contract passed 8 checks; three materially different test profiles produced different top recommendations; goal changes altered matching signals; TypeScript and the full production build passed; 40/40 opportunities have stored semantic vectors.
+
+### Previous Action
+
+- **Action:** Renamed the Opportunity Universe shelf label from `Serendipity` to `Worth Exploring` while preserving the existing internal filter identifier and behavior.
+- **Scope:** User-facing copy only in `app/app/page.tsx`; no matching, filtering, data, routing, or backend behavior changed.
+- **Verification:** Route contract passed all 8 checks and TypeScript validation passed.
+
+### Previous Action
+
+- **Action:** Added permanent route-ownership protection for the public landing page and authenticated application.
+- **Route contract:** `/` is permanently assigned to the public landing page; `/app` is permanently assigned to the authenticated Opportunity Universe workspace; signup proceeds to `/onboarding` before `/app`.
+- **Agent protection:** Added a mandatory Route Ownership Contract to `AGENTS.md`, ensuring future coding agents receive the boundary before making changes.
+- **Architecture reference:** Added `docs/ROUTING.md` with the route map, component ownership, authentication flow, and verification procedure.
+- **Automated guard:** Added `scripts/verify-route-contract.mjs` and `npm run test:routes`. The guard checks landing/dashboard ownership, shell isolation, desktop/mobile navigation, and middleware protection.
+- **Build enforcement:** Added the route guard as `prebuild`, so production builds fail before compilation if the landing-page contract is broken.
+- **Verification:** The route contract passed all 8 checks.
+
+### Previous Action
 
 - **Action:** Restored the original Oppverse landing page to `/` from the immutable five-hour-old Vercel deployment without redesigning or rewriting it.
 - **Recovered artifacts:** Original deployed page structure, copy, iconography, imagery, animation, responsive behavior, and exact deployed CSS values. Landing assets in `public/landing/` were preserved and reused.
@@ -64,7 +91,8 @@
 ### Live Routes
 | Route | Access | Description |
 | :--- | :--- | :--- |
-| `/` & `/app` | Authenticated / Demo | Home Opportunity Universe Feed & Daily Brief Hero |
+| `/` | Public | Main-domain Oppverse landing page |
+| `/app` | Authenticated | Home Opportunity Universe Feed & Daily Brief Hero |
 | `/login` | Public / Auth | User Sign In (Email + Google OAuth) |
 | `/signup` | Public / Auth | User Registration |
 | `/forgot-password` | Public / Auth | Password Recovery Request |
@@ -92,5 +120,33 @@
 - Preserved the application dashboard at `/app` and updated internal dashboard navigation accordingly.
 - Production deployment: `https://oppverseai.vercel.app`
 - Verified production `/` and `/app` both return HTTP 200 with their expected content.
+
+## 2026-09-21 Clean Signup Baseline
+
+- Hard-deleted every Supabase Auth user and confirmed all user-owned profile, persona, match, mission, application, and vault records are empty.
+- Preserved the 40 global opportunity catalogue records so new users can receive real catalogue matches after onboarding.
+- Removed the obsolete sample-data module from the codebase.
+- Opportunity Universe now excludes deterministically ineligible opportunities and matches below 45%; Discover remains the broad catalogue.
+- Route, personalization, TypeScript, and production-build checks pass.
+
+## 2026-09-21 Intentional Product Light Mode
+
+- Light mode is scoped to product and authentication routes, with a near-white canvas, white surfaces, crisp neutral borders, near-black text, and restrained violet interaction accents.
+- The public landing page at `/` is always rendered in its existing dark presentation and ignores the saved product theme.
+- Theme preference still persists across product navigation and initializes before paint.
+- Brand icons automatically use their dark-on-light asset in light mode.
+
+## 2026-09-21 Opportunity Feed Quality Guardrails
+
+- Opportunity Universe only presents confirmed eligible matches scoring 65% or higher; Discover remains the broader browsing surface.
+- Editorial guides, listicles, and roundup pages are rejected before ranking and by future ingestion runs.
+- Category labels are inferred from the opportunity content instead of blindly trusting a source-wide default.
+- Generic remote and funding metadata cannot create a recommendation without category, skills, or semantic relevance evidence.
+
+## 2026-09-21 Light Theme Contrast Direction
+
+- Product light mode uses a true-white working canvas with subtly warm off-white navigation rather than a page-wide gray tint.
+- Cards and form controls remain white; hierarchy comes from near-black text, measured neutral borders, and minimal elevation.
+- Oppverse violet remains reserved for primary actions and focus states. Dark mode and the public landing page are unaffected.
 
 

@@ -1,53 +1,33 @@
-﻿import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { sampleOpportunities } from '@/lib/sample-data';
+import { NextResponse } from 'next/server';
+import { loadAuthenticatedProfile } from '@/lib/personalization/server';
+import { mapDbOpportunityToModel } from '@/lib/supabase/db';
+import { buildOpportunitySemanticText, cosineSimilarity, createSemanticVector } from '@/lib/personalization/semantic';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { missionId, userId, prompt } = await req.json();
+    const { missionId, prompt } = await req.json();
+    if (!missionId || !prompt?.trim()) return NextResponse.json({ error: 'Mission and prompt required' }, { status: 400 });
+    const context = await loadAuthenticatedProfile();
+    if ('error' in context) return NextResponse.json({ error: context.error }, { status: context.status });
 
-    const supabase = createClient();
-    
-    // 1. Fetch live opportunities
-    const { data: dbOpps } = await supabase.from('opportunities').select('*');
-    const allOpps = (dbOpps && dbOpps.length > 0) ? dbOpps : sampleOpportunities;
+    const { data: mission } = await context.supabase.from('missions').select('*').eq('id', missionId).eq('user_id', context.user.id).single();
+    if (!mission) return NextResponse.json({ error: 'Mission not found' }, { status: 404 });
+    const { data: rows, error } = await context.supabase.from('opportunities').select('*');
+    if (error) throw error;
 
-    // 2. Compute matching items based on prompt and categories
-    const searchTerms = (prompt || 'AI Fellowships Product Marketing').toLowerCase().split(' ').filter((w: string) => w.length > 2);
-    
-    const matched = allOpps.filter((opp: any) => {
-      const text = `${opp.title} ${opp.category} ${opp.description} ${opp.provider}`.toLowerCase();
-      return searchTerms.some((term: string) => text.includes(term));
-    });
+    const missionVector = createSemanticVector(`${prompt}\nProfile goals: ${context.profile.goals.join('; ')}\nSkills: ${context.profile.skills.join(', ')}`);
+    const matched = (rows || []).map((row) => {
+      const opportunity = mapDbOpportunityToModel(row);
+      const score = cosineSimilarity(missionVector, createSemanticVector(buildOpportunitySemanticText(opportunity)));
+      return { opportunity, score };
+    }).filter((item) => item.score > 0.05).sort((a, b) => b.score - a.score);
 
-    const newMatchCount = Math.max(matched.length, 3);
-
-    // 3. If authenticated, update mission row in Supabase
-    if (missionId && userId) {
-      try {
-        await supabase
-          .from('missions')
-          .update({
-            match_count: newMatchCount,
-            last_run_at: new Date().toISOString()
-          })
-          .eq('id', missionId)
-          .eq('user_id', userId);
-      } catch (dbErr) {
-        console.warn('Could not update mission in DB:', dbErr);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      missionId,
-      matchCount: newMatchCount,
-      lastRunAt: new Date().toISOString(),
-      matchedOpportunities: matched.slice(0, 5)
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Mission run failed' }, { status: 500 });
+    const lastRunAt = new Date().toISOString();
+    await context.supabase.from('missions').update({ match_count: matched.length, last_run_at: lastRunAt }).eq('id', missionId).eq('user_id', context.user.id);
+    return NextResponse.json({ success: true, missionId, matchCount: matched.length, lastRunAt, matchedOpportunities: matched.slice(0, 5).map((item) => item.opportunity) });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Mission run failed' }, { status: 500 });
   }
 }

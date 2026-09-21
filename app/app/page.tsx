@@ -8,24 +8,23 @@ import {
   MapPin, 
   ShieldAlert, 
   ArrowRight, 
-  TrendingUp, 
+  BadgeCheck,
   LayoutGrid, 
-  Compass, 
+  Binoculars,
   Coins, 
   ShieldCheck, 
-  Zap, 
+  ListFilter,
   SearchX, 
   SlidersHorizontal,
   Loader2
 } from 'lucide-react';
-import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
-import { evaluateOpportunityMatch } from '@/lib/matching';
 import { Opportunity, UserProfile } from '@/lib/types';
+import { createEmptyProfile } from '@/lib/empty-data';
+import { PersonalizedMatch } from '@/lib/personalization/matching';
 import OpportunityModal from '@/components/OpportunityModal';
 import DailyBriefHero from '@/components/DailyBriefHero';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { fetchOpportunities, fetchUserProfile } from '@/lib/supabase/db';
 import { useAuth } from '@/components/AuthProvider';
 
 type FeedShelf = 'top_matches' | 'closing_soon' | 'fully_funded' | 'serendipity' | 'all';
@@ -33,8 +32,10 @@ type FeedShelf = 'top_matches' | 'closing_soon' | 'fully_funded' | 'serendipity'
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(sampleOpportunities);
+  const [profile, setProfile] = useState<UserProfile>(() => createEmptyProfile());
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [matches, setMatches] = useState<Record<string, PersonalizedMatch>>({});
+  const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedShelf, setSelectedShelf] = useState<FeedShelf>('top_matches');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -44,15 +45,20 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
+      setLoadError('');
       try {
-        const [oppsData, profileData] = await Promise.all([
-          fetchOpportunities(),
-          fetchUserProfile(user?.id)
-        ]);
-        if (oppsData && oppsData.length > 0) setOpportunities(oppsData);
-        if (profileData) setProfile(profileData);
+        if (!user?.id) return;
+        const response = await fetch('/api/personalization/feed', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Your personalized opportunities could not be loaded.');
+        const payload = await response.json();
+        setProfile(payload.profile);
+        setOpportunities(payload.results.map((item: { opportunity: Opportunity }) => item.opportunity));
+        setMatches(Object.fromEntries(payload.results.map((item: { opportunity: Opportunity; match: PersonalizedMatch }) => [item.opportunity.id, item.match])));
       } catch (err) {
         console.warn('Error loading live data:', err);
+        setOpportunities([]);
+        setMatches({});
+        setLoadError(err instanceof Error ? err.message : 'Your personalized opportunities could not be loaded.');
       } finally {
         setIsLoading(false);
       }
@@ -88,10 +94,10 @@ export default function HomePage() {
   };
 
   // Evaluate matches dynamically against active persona
-  const evaluatedOpportunities = opportunities.map(opp => ({
-    opp,
-    match: evaluateOpportunityMatch(profile, opp)
-  }));
+  const evaluatedOpportunities = opportunities
+    .filter((opp) => matches[opp.id])
+    .map(opp => ({ opp, match: matches[opp.id] }))
+    .filter(({ match }) => match.eligibilityStatus === 'Eligible' && match.matchScore >= 65);
 
   // Filter by Category
   const categoryFiltered = selectedCategory === 'All' 
@@ -130,6 +136,7 @@ export default function HomePage() {
         onInspect={(opp) => setActiveModalOpp(opp)}
         onToggleSave={handleToggleSave}
         savedOppIds={savedOppIds}
+        matches={matches}
       />
 
       {/* 2. Curated Opportunity Universes Feed Shelves */}
@@ -137,20 +144,20 @@ export default function HomePage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
           <div>
             <h2 className="text-xl font-bold font-display text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-white" /> Opportunity Universe Feed
+              <ListFilter className="w-5 h-5 text-white" /> Opportunity Universe Feed
             </h2>
             <p className="text-xs text-zinc-400">
-              Ranked dynamically by the 5-layer Explainable Matching Engine for <span className="text-white font-medium">{activePersona.name}</span>.
+              Ranked dynamically for <span className="text-white font-medium">{activePersona?.name || 'your profile'}</span>.
             </p>
           </div>
 
           {/* Shelf Selector Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1 rounded-2xl bg-zinc-950 border border-zinc-800">
             {[
-              { id: 'top_matches', label: 'Best Matches', icon: TrendingUp },
+              { id: 'top_matches', label: 'Best Matches', icon: BadgeCheck },
               { id: 'closing_soon', label: 'Closing Soon', icon: Clock },
               { id: 'fully_funded', label: 'Fully Funded', icon: Coins },
-              { id: 'serendipity', label: 'Serendipity', icon: Compass },
+              { id: 'serendipity', label: 'Worth Exploring', icon: Binoculars },
               { id: 'all', label: 'All Feed', icon: LayoutGrid }
             ].map(tab => {
               const Icon = tab.icon;
@@ -161,7 +168,7 @@ export default function HomePage() {
                   onClick={() => setSelectedShelf(tab.id as FeedShelf)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
                     isSelected
-                      ? 'bg-zinc-800 text-white shadow-sm'
+                      ? 'control-selected'
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -183,7 +190,7 @@ export default function HomePage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
                   isSelected
-                    ? 'bg-white text-zinc-950 border-white shadow-sm'
+                    ? 'control-selected'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
                 }`}
               >
@@ -199,8 +206,13 @@ export default function HomePage() {
             <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
             <p className="text-xs text-zinc-500">Querying Opportunity Universe...</p>
           </div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-8 text-center">
+            <p className="text-sm font-semibold text-white">Personalized feed unavailable</p>
+            <p className="mt-2 text-xs text-zinc-400">{loadError}</p>
+          </div>
         ) : displayList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
             {displayList.map(({ opp, match }) => {
               const isSaved = savedOppIds.includes(opp.id);
               const daysLeft = Math.ceil((new Date(opp.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -209,12 +221,12 @@ export default function HomePage() {
                 <div
                   key={opp.id}
                   onClick={() => setActiveModalOpp(opp)}
-                  className="p-6 rounded-2xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between space-y-4 group shadow-sm hover:shadow-md"
+                  className="p-6 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-600 transition-colors cursor-pointer flex flex-col justify-between min-h-[300px] gap-6 group"
                 >
                   <div className="space-y-3">
                     {/* Top Row: Universe Badge & Match Score */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300">
                         {opp.category}
                       </span>
                       
@@ -237,10 +249,10 @@ export default function HomePage() {
 
                     {/* Opportunity Title & Provider */}
                     <div>
-                      <h3 className="text-base font-bold text-white group-hover:text-zinc-200 transition-colors line-clamp-2 leading-snug">
+                      <h3 className="text-[17px] font-semibold text-white group-hover:text-zinc-200 transition-colors line-clamp-2 leading-[1.4]">
                         {opp.title}
                       </h3>
-                      <p className="text-xs font-medium text-zinc-400 mt-1 flex items-center gap-1.5">
+                      <p className="text-[13px] font-medium text-zinc-400 mt-1.5 flex items-center gap-1.5">
                         <span className="truncate">{opp.provider}</span>
                         <span className="w-1 h-1 rounded-full bg-zinc-600 inline-block flex-shrink-0" />
                         <span className="text-zinc-500 truncate">{opp.locationType}</span>
@@ -248,12 +260,12 @@ export default function HomePage() {
                     </div>
 
                     {/* Summary */}
-                    <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                    <p className="text-[13px] text-zinc-300 line-clamp-3 leading-5">
                       {opp.summary}
                     </p>
 
                     {/* Key Highlights / Funding */}
-                    <div className="pt-2 border-t border-zinc-900 flex flex-wrap gap-2 text-[11px]">
+                    <div className="pt-3 border-t border-zinc-800 flex flex-wrap gap-2 text-xs">
                       <span className="text-zinc-300 bg-zinc-900/80 px-2 py-0.5 rounded-md border border-zinc-800">
                         {opp.fundingAmount || opp.fundingStatus}
                       </span>
@@ -302,7 +314,7 @@ export default function HomePage() {
             <div className="space-y-1 max-w-md mx-auto">
               <h3 className="text-base font-bold text-white">No matches found in this shelf</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Your autonomous agent is monitoring 16 global networks for closing-soon opportunities matching <span className="text-zinc-200">{activePersona.name}</span>.
+                Your autonomous agent is monitoring 16 global networks for closing-soon opportunities matching <span className="text-zinc-200">{activePersona?.name || 'your profile'}</span>.
               </p>
             </div>
             <div className="pt-2">

@@ -19,15 +19,16 @@ import {
   X,
   ExternalLink
 } from 'lucide-react';
-import { initialProfile, sampleOpportunities } from '@/lib/sample-data';
+import { UserProfile } from '@/lib/types';
 import { useTheme } from '@/components/ThemeProvider';
 import { useNav } from '@/components/NavProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { generateOpportunityNotifications, AppNotification } from '@/lib/notifications';
-import { fetchOpportunities } from '@/lib/supabase/db';
+import { fetchOpportunities, fetchUserProfile } from '@/lib/supabase/db';
 
 export default function Header() {
-  const [selectedPersonaId, setSelectedPersonaId] = useState(initialProfile.activePersonaId);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [selectedPersonaId, setSelectedPersonaId] = useState('');
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -37,14 +38,21 @@ export default function Header() {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
+    if (!user?.id) return;
+    fetchUserProfile(user.id).then((userProfile) => {
+      setProfile(userProfile);
+      setSelectedPersonaId(userProfile?.activePersonaId || '');
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
     async function loadNotifs() {
       try {
         const liveOpps = await fetchOpportunities();
-        const list = liveOpps && liveOpps.length > 0 ? liveOpps : sampleOpportunities;
-        const notifs = generateOpportunityNotifications(list);
+        const notifs = generateOpportunityNotifications(liveOpps);
         setNotifications(notifs);
       } catch (e) {
-        setNotifications(generateOpportunityNotifications(sampleOpportunities));
+        setNotifications([]);
       }
     }
     loadNotifs();
@@ -60,9 +68,9 @@ export default function Header() {
     setNotifications(prev => prev.map(n => n.id === id ? ({ ...n, read: true }) : n));
   };
 
-  const activePersona = initialProfile.personas.find(p => p.id === selectedPersonaId) || initialProfile.personas[0];
-  const userDisplayName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'Tomide Williams');
-  const userInitials = userDisplayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'TW';
+  const activePersona = profile?.personas.find(p => p.id === selectedPersonaId) || profile?.personas[0];
+  const userDisplayName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'Member');
+  const userInitials = userDisplayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'ME';
 
   return (
     <header className={`app-header h-20 fixed top-0 right-0 left-0 ${isSidebarCollapsed ? 'lg:left-20' : 'lg:left-64'} px-4 sm:px-8 lg:px-10 flex items-center justify-between z-30 transition-all`}>
@@ -77,8 +85,8 @@ export default function Header() {
           <Menu className="w-5 h-5" />
         </button>
 
-        <Link href="/" className="lg:hidden flex items-center gap-1.5 flex-shrink-0 mr-1 sm:mr-2">
-          <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-6 h-6 object-contain rounded" />
+        <Link href="/app" className="lg:hidden flex items-center gap-1.5 flex-shrink-0 mr-1 sm:mr-2">
+          <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="brand-icon w-6 h-6 object-contain rounded" />
           <span className="font-display font-bold text-base text-white">Oppverse AI</span>
         </Link>
 
@@ -102,18 +110,14 @@ export default function Header() {
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="persona-label text-zinc-400 font-medium">Persona:</span>
-            <span className="persona-name font-semibold text-white truncate max-w-[130px]">{activePersona.name}</span>
+            <span className="persona-name font-semibold text-white truncate max-w-[130px]">{activePersona?.name || 'Set up profile'}</span>
             <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
           </button>
 
           {isPersonaOpen && (
             <div className="absolute right-0 mt-2 w-72 p-2 rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl z-50 animate-fadeIn">
-              <div className="px-3 py-2 border-b border-zinc-800/80 mb-1">
-                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Active Opportunity Persona</p>
-                <p className="text-xs text-zinc-500">Matching algorithm weights change dynamically.</p>
-              </div>
               <div className="py-1 space-y-1">
-                {initialProfile.personas.map((persona) => {
+                {(profile?.personas || []).map((persona) => {
                   const isCurrent = persona.id === selectedPersonaId;
                   return (
                     <button

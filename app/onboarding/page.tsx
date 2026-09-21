@@ -1,284 +1,141 @@
-﻿'use client';
+'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Target, Compass, Sparkles, CheckCircle2, ArrowRight, ShieldCheck, Globe, GraduationCap, Briefcase, Award, Rocket, Lightbulb, Palette } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, Compass, FileText, Globe2, Loader2, Target, Upload, UserRound } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import { completeUserOnboarding } from '@/lib/supabase/db';
+import { OpportunityCategory, UserProfile } from '@/lib/types';
+import { countries } from '@/lib/countries';
+
+const segments = [
+  ['Early-Career Professional', 'Career-launching roles and professional opportunities'],
+  ['Student or Graduate', 'Scholarships, internships, research and graduate opportunities'],
+  ['Mid-Career Professional', 'Leadership roles, fellowships and professional growth'],
+  ['Founder or Entrepreneur', 'Funding, accelerators and founder programmes'],
+  ['Researcher or Academic', 'Research funding, fellowships and calls for papers'],
+  ['Creative or Independent', 'Residencies, grants, awards and international programmes'],
+] as const;
+
+const universes: OpportunityCategory[] = ['Jobs', 'Fellowships', 'Scholarships', 'Grants', 'Conferences', 'Travel', 'Accelerators', 'Speaking', 'Competitions'];
+const careerLevels: UserProfile['careerLevel'][] = ['Student', 'Early-Career', 'Mid-Career', 'Senior', 'Executive', 'Founder'];
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
-  const [selectedPersona, setSelectedPersona] = useState('Early-Career Professional');
-  const [selectedUniverses, setSelectedUniverses] = useState<string[]>([
-    'Jobs & Internships', 
-    'Fellowships & Leadership', 
-    'Grants & Funding'
-  ]);
-  const [countryOfCitizenship, setCountryOfCitizenship] = useState('Nigeria');
-  const [experienceLevel, setExperienceLevel] = useState('Mid-Level (3-5 years)');
-  const [isFinishing, setIsFinishing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [error, setError] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [countryOfResidence, setCountryOfResidence] = useState('');
+  const [city, setCity] = useState('');
+  const [citizenship, setCitizenship] = useState('');
+  const [careerLevel, setCareerLevel] = useState<UserProfile['careerLevel']>('Early-Career');
+  const [yearsOfExperience, setYearsOfExperience] = useState(0);
+  const [segment, setSegment] = useState('Early-Career Professional');
+  const [currentRole, setCurrentRole] = useState('');
+  const [targetRole, setTargetRole] = useState('');
+  const [selectedUniverses, setSelectedUniverses] = useState<OpportunityCategory[]>(['Jobs', 'Fellowships']);
+  const [goalsText, setGoalsText] = useState('');
+  const [remotePreference, setRemotePreference] = useState<UserProfile['remotePreference']>('Any');
+  const [relocationPreference, setRelocationPreference] = useState(false);
+  const [skillsText, setSkillsText] = useState('');
+  const [cvText, setCvText] = useState('');
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [personaName, setPersonaName] = useState('');
 
-  // 6 Core User Segments from PRD Section 5
-  const personas = [
-    { 
-      id: 'early_career',
-      title: 'Early-Career Professional', 
-      desc: 'Jobs, Graduate programs, Fellowships, Professional training & Travel programs',
-      icon: Briefcase
-    },
-    { 
-      id: 'student_grad',
-      title: 'Student & Graduate', 
-      desc: 'Scholarships, Internships, Graduate schemes, Competitions & Study-abroad',
-      icon: GraduationCap
-    },
-    { 
-      id: 'mid_career',
-      title: 'Mid-Career Professional / Leader', 
-      desc: 'International roles, Leadership fellowships, Speaking & Industry awards',
-      icon: Award
-    },
-    { 
-      id: 'founder',
-      title: 'Founder & Entrepreneur', 
-      desc: 'Grants, Accelerators, Startup funding, Founder fellowships & Pitch opportunities',
-      icon: Rocket
-    },
-    { 
-      id: 'researcher',
-      title: 'Researcher & Academic', 
-      desc: 'Research grants, Fellowships, Scholarships, Conferences & Calls for papers',
-      icon: Lightbulb
-    },
-    { 
-      id: 'creative',
-      title: 'Creative & Independent', 
-      desc: 'Residencies, Creative grants, Awards, Competitions & International programs',
-      icon: Palette
-    },
-  ];
+  useEffect(() => {
+    if (user) setFullName(user.user_metadata?.full_name || user.email?.split('@')[0] || '');
+  }, [user]);
 
-  // Core Opportunity Universes from PRD Section 1
-  const universes = [
-    'Jobs & Internships', 
-    'Fellowships & Leadership', 
-    'Scholarships & Study Abroad', 
-    'Grants & Funding', 
-    'Conferences & Events', 
-    'Travel & Exchanges', 
-    'Accelerators & Competitions', 
-    'Speaking & Research'
-  ];
+  useEffect(() => {
+    if (!personaName) setPersonaName(targetRole || segment);
+  }, [targetRole, segment, personaName]);
 
-  const toggleUniverse = (cat: string) => {
-    setSelectedUniverses(prev => 
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
+  const goals = useMemo(() => goalsText.split('\n').map((value) => value.trim()).filter(Boolean), [goalsText]);
+  const skills = useMemo(() => skillsText.split(',').map((value) => value.trim()).filter(Boolean), [skillsText]);
+
+  const toggleUniverse = (universe: OpportunityCategory) => setSelectedUniverses((current) => current.includes(universe) ? current.filter((item) => item !== universe) : [...current, universe]);
+
+  const next = () => {
+    setError('');
+    if (step === 1 && (!fullName || !countryOfResidence || !citizenship)) return setError('Add your name, country of residence and citizenship to continue.');
+    if (step === 2 && !targetRole.trim()) return setError('Tell Oppverse the role or direction you want to pursue.');
+    if (step === 3 && selectedUniverses.length === 0) return setError('Select at least one opportunity universe.');
+    if (step === 4 && goals.length === 0) return setError('Add at least one goal so Oppverse knows where you want to go.');
+    setStep((current) => Math.min(6, current + 1));
   };
 
-  const handleFinish = () => {
-    setIsFinishing(true);
-    setTimeout(() => {
-      router.push('/');
+  const parseCv = async () => {
+    if (!cvFile && !cvText.trim()) return;
+    setIsParsing(true);
+    setError('');
+    try {
+      const form = new FormData();
+      if (cvFile) form.append('file', cvFile);
+      if (cvText.trim()) form.append('cvText', cvText.trim());
+      const response = await fetch('/api/parse-cv', { method: 'POST', body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not read that CV.');
+      const parsed = result.data || {};
+      if (parsed.skills?.length) setSkillsText(Array.from(new Set([...skills, ...parsed.skills])).join(', '));
+      if (parsed.yearsOfExperience) setYearsOfExperience(parsed.yearsOfExperience);
+      if (parsed.careerLevel && careerLevels.includes(parsed.careerLevel)) setCareerLevel(parsed.careerLevel);
+      if (!currentRole && parsed.workHistory?.[0]?.role) setCurrentRole(parsed.workHistory[0].role);
+    } catch (parseError: any) {
+      setError(parseError.message || 'Could not parse the CV. You can continue manually.');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const finish = async () => {
+    if (!user) return setError('Your session is not ready. Please sign in again.');
+    setIsSaving(true);
+    setError('');
+    try {
+      await completeUserOnboarding(user.id, { fullName, citizenship, countryOfResidence, city, yearsOfExperience, careerLevel, skills, goals, selectedUniverses, remotePreference, relocationPreference, personaName: personaName.trim() || targetRole, personaRole: targetRole.trim() });
+      router.replace('/app');
       router.refresh();
-    }, 1000);
+    } catch (saveError: any) {
+      setError(saveError.message || 'We could not save your profile. Please try again.');
+      setIsSaving(false);
+    }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a]">
-      <div className="w-full max-w-xl space-y-6">
-        {/* Step Indicator */}
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2.5">
-            <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-7 h-7 object-contain rounded-lg shadow-sm" />
-            <span className="font-display font-semibold text-lg text-white">Oppverse Setup</span>
-          </div>
-          <span className="text-xs font-semibold text-zinc-400">Step {step} of 3</span>
-        </div>
+  if (authLoading) return <div className="min-h-screen grid place-items-center"><Loader2 className="icon-md animate-spin text-zinc-400" /></div>;
 
-        <div className="p-6 sm:p-8 rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl space-y-6">
-          {step === 1 && (
-            <div className="space-y-5 animate-fadeIn">
-              <div className="space-y-1">
-                <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                  <Target className="w-5 h-5 text-white" /> What is your primary focus?
-                </h2>
-                <p className="text-xs text-zinc-400">
-                  Select your primary persona from the 6 Oppverse core user segments.
-                </p>
-              </div>
+  return <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[var(--background)]">
+    <div className="w-full max-w-2xl space-y-5">
+      <header className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2.5"><img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="brand-icon w-8 h-8 object-contain rounded-lg" /><div><p className="font-display font-semibold text-base text-white">Build your opportunity universe</p><p className="text-[11px] text-zinc-500">One identity. Multiple opportunity personas.</p></div></div>
+        <span className="text-xs font-semibold text-zinc-400">{step} of 6</span>
+      </header>
+      <div className="h-1 rounded-full bg-zinc-900 overflow-hidden"><div className="h-full bg-[var(--accent)] transition-all duration-200" style={{ width: `${(step / 6) * 100}%` }} /></div>
 
-              <div className="grid grid-cols-1 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
-                {personas.map((p) => {
-                  const Icon = p.icon;
-                  const isSelected = selectedPersona === p.title;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setSelectedPersona(p.title)}
-                      className={`p-3.5 rounded-xl text-left border transition-all ${
-                        isSelected
-                          ? 'bg-zinc-900 border-white text-white shadow-sm'
-                          : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-white flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-zinc-400" />
-                          {p.title}
-                        </span>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
-                      </div>
-                      <p className="text-[11px] text-zinc-400 mt-1 pl-6">{p.desc}</p>
-                    </button>
-                  );
-                })}
-              </div>
+      <section className="p-5 sm:p-8 rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl space-y-6">
+        {step === 1 && <Step title="About you" description="Start with the information Oppverse uses for eligibility." icon={UserRound}><div className="grid sm:grid-cols-2 gap-4"><Field label="Full name"><input className="onboarding-input" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" /></Field><Field label="Country of residence"><CountrySelect value={countryOfResidence} onChange={setCountryOfResidence} placeholder="Select your country" autoComplete="country-name" /></Field><Field label="City (optional)"><input className="onboarding-input" value={city} onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" /></Field><Field label="Citizenship"><CountrySelect value={citizenship} onChange={setCitizenship} placeholder="Select your citizenship" /></Field></div></Step>}
 
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full py-2.5 px-4 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-              >
-                Next Step <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+        {step === 2 && <Step title="Professional direction" description="Choose your broad identity and the direction you want to pursue." icon={BriefcaseBusiness}><div className="grid sm:grid-cols-2 gap-2.5">{segments.map(([name, description]) => <Choice key={name} selected={segment === name} onClick={() => setSegment(name)} title={name} description={description} />)}</div><div className="grid sm:grid-cols-2 gap-4"><Field label="Current role (optional)"><input className="onboarding-input" value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} placeholder="What do you do today?" /></Field><Field label="Target role or direction"><input className="onboarding-input" value={targetRole} onChange={(e) => setTargetRole(e.target.value)} placeholder="What are you moving toward?" /></Field><Field label="Career level"><select className="onboarding-input" value={careerLevel} onChange={(e) => setCareerLevel(e.target.value as UserProfile['careerLevel'])}>{careerLevels.map((level) => <option key={level}>{level}</option>)}</select></Field><Field label="Years of experience"><input type="number" min="0" max="50" className="onboarding-input" value={yearsOfExperience} onChange={(e) => setYearsOfExperience(Number(e.target.value))} /></Field></div></Step>}
 
-          {step === 2 && (
-            <div className="space-y-5 animate-fadeIn">
-              <div className="space-y-1">
-                <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-white" /> Select your Opportunity Universes
-                </h2>
-                <p className="text-xs text-zinc-400">
-                  Choose the categories you want your autonomous intelligence engine to track.
-                </p>
-              </div>
+        {step === 3 && <Step title="Opportunity interests" description="Select every universe Oppverse should continuously monitor for you." icon={Compass}><div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">{universes.map((universe) => <button type="button" key={universe} onClick={() => toggleUniverse(universe)} className={`selection-tile ${selectedUniverses.includes(universe) ? 'selection-tile-active' : ''}`}><span>{universe}</span>{selectedUniverses.includes(universe) && <Check className="icon-xs" />}</button>)}</div></Step>}
 
-              <div className="grid grid-cols-2 gap-2.5">
-                {universes.map((cat) => {
-                  const isSelected = selectedUniverses.includes(cat);
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => toggleUniverse(cat)}
-                      className={`p-3 rounded-xl text-left border text-xs transition-all flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-white text-zinc-950 border-white font-semibold shadow-sm'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
-                      }`}
-                    >
-                      <span className="truncate">{cat}</span>
-                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-zinc-950 flex-shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
+        {step === 4 && <Step title="Goals and preferences" description="Tell Oppverse what progress should look like for this persona." icon={Target}><Field label="Your goals (one per line)"><textarea rows={4} className="onboarding-input resize-none" value={goalsText} onChange={(e) => setGoalsText(e.target.value)} placeholder={'Land a remote product role\nSecure a fully funded fellowship'} /></Field><div className="grid sm:grid-cols-2 gap-4"><Field label="Work/location preference"><select className="onboarding-input" value={remotePreference} onChange={(e) => setRemotePreference(e.target.value as UserProfile['remotePreference'])}><option>Any</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></Field><label className="flex items-center gap-3 px-4 min-h-11 rounded-lg border border-zinc-800 bg-zinc-900 text-xs text-zinc-300 mt-6"><input type="checkbox" checked={relocationPreference} onChange={(e) => setRelocationPreference(e.target.checked)} /> Open to relocation</label></div></Step>}
 
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-1/3 py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  disabled={selectedUniverses.length === 0}
-                  className="w-2/3 py-2.5 px-4 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                >
-                  Next Step <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
+        {step === 5 && <Step title="Skills and optional CV" description="Add skills manually, use a CV to accelerate setup, or do both." icon={FileText}><Field label="Skills (separate with commas)"><textarea rows={3} className="onboarding-input resize-none" value={skillsText} onChange={(e) => setSkillsText(e.target.value)} placeholder="Product strategy, Python, Research, Public speaking" /></Field><div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/60 p-4 space-y-3"><div className="flex items-center gap-2 text-xs font-semibold text-zinc-200"><Upload className="icon-sm" /> Optional CV</div><input type="file" accept=".pdf,.doc,.docx,.txt" className="block w-full text-xs text-zinc-400" onChange={(e) => setCvFile(e.target.files?.[0] || null)} /><textarea rows={3} className="onboarding-input resize-none" value={cvText} onChange={(e) => setCvText(e.target.value)} placeholder="Or paste CV/profile text here" /><button type="button" className="btn btn-secondary" disabled={isParsing || (!cvFile && !cvText.trim())} onClick={parseCv}>{isParsing ? <Loader2 className="icon-sm animate-spin" /> : <FileText className="icon-sm" />} Extract profile details</button></div></Step>}
 
-          {step === 3 && (
-            <div className="space-y-5 animate-fadeIn">
-              <div className="space-y-1">
-                <h2 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-white" /> Eligibility & Experience Layer
-                </h2>
-                <p className="text-xs text-zinc-400">
-                  Accurate criteria screening prevents false-hope applications.
-                </p>
-              </div>
+        {step === 6 && <Step title="Confirm your primary persona" description="This is your first opportunity lens. You can create additional personas later." icon={Globe2}><div className="space-y-4"><Field label="Persona name"><input className="onboarding-input" value={personaName} onChange={(e) => setPersonaName(e.target.value)} /></Field><div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-3 text-xs"><Summary label="Direction" value={targetRole} /><Summary label="Opportunity universes" value={selectedUniverses.join(', ')} /><Summary label="Goals" value={goals.join(' · ')} /><Summary label="Skills" value={skills.length ? skills.join(', ') : 'Add later from your profile'} /></div></div></Step>}
 
-              <div className="space-y-3.5">
-                <div>
-                  <label className="text-xs font-semibold text-zinc-300 mb-1.5 block flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-zinc-400" /> Country of Citizenship / Origin
-                  </label>
-                  <select
-                    value={countryOfCitizenship}
-                    onChange={(e) => setCountryOfCitizenship(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs outline-none"
-                  >
-                    <option value="Nigeria">Nigeria</option>
-                    <option value="Ghana">Ghana</option>
-                    <option value="Kenya">Kenya</option>
-                    <option value="Rwanda">Rwanda</option>
-                    <option value="South Africa">South Africa</option>
-                    <option value="Uganda">Uganda</option>
-                    <option value="United States">United States</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Other">Other Global</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-zinc-300 mb-1.5 block flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-zinc-400" /> Professional Experience Level
-                  </label>
-                  <select
-                    value={experienceLevel}
-                    onChange={(e) => setExperienceLevel(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs outline-none"
-                  >
-                    <option value="Student / Entry-Level (0-2 years)">Student / Entry-Level (0-2 years)</option>
-                    <option value="Mid-Level (3-5 years)">Mid-Level (3-5 years)</option>
-                    <option value="Senior / Lead (6-9 years)">Senior / Lead (6-9 years)</option>
-                    <option value="Director / Executive (10+ years)">Director / Executive (10+ years)</option>
-                  </select>
-                </div>
-
-                <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                    <Sparkles className="w-4 h-4 text-emerald-400" />
-                    Personalized Universe Ready
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Oppverse will evaluate live opportunities across your selected universes with verified eligibility screening.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="w-1/3 py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFinish}
-                  disabled={isFinishing}
-                  className="w-2/3 py-2.5 px-4 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                >
-                  {isFinishing ? 'Building Universe...' : 'Enter Oppverse'} <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+        {error && <p className="text-xs text-rose-400 border border-rose-500/30 bg-rose-950/30 rounded-lg px-3 py-2" role="alert">{error}</p>}
+        <footer className="flex items-center justify-between gap-3 pt-1"><button type="button" onClick={() => { setError(''); setStep((current) => Math.max(1, current - 1)); }} disabled={step === 1 || isSaving} className="btn btn-secondary disabled:opacity-40"><ArrowLeft className="icon-sm" /> Back</button>{step < 6 ? <button type="button" onClick={next} className="btn btn-primary">Continue <ArrowRight className="icon-sm" /></button> : <button type="button" onClick={finish} disabled={isSaving} className="btn btn-primary min-w-40">{isSaving ? <><Loader2 className="icon-sm animate-spin" /> Building universe</> : <>Enter Oppverse <ArrowRight className="icon-sm" /></>}</button>}</footer>
+      </section>
     </div>
-  );
+  </div>;
 }
+
+function Step({ title, description, icon: Icon, children }: { title: string; description: string; icon: React.ElementType; children: React.ReactNode }) { return <div className="space-y-5"><div className="flex gap-3"><span className="grid place-items-center w-9 h-9 rounded-lg border border-zinc-800 bg-zinc-900"><Icon className="icon-sm text-zinc-300" /></span><div><h1 className="font-display text-lg font-semibold text-white">{title}</h1><p className="text-xs text-zinc-400 mt-0.5">{description}</p></div></div>{children}</div>; }
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block"><span className="block text-xs font-medium text-zinc-300 mb-1.5">{label}</span>{children}</label>; }
+function CountrySelect({ value, onChange, placeholder, autoComplete }: { value: string; onChange: (value: string) => void; placeholder: string; autoComplete?: string }) { return <select className="onboarding-input" value={value} onChange={(event) => onChange(event.target.value)} autoComplete={autoComplete}><option value="" disabled>{placeholder}</option>{countries.map((country) => <option key={country} value={country}>{country}</option>)}</select>; }
+function Choice({ selected, onClick, title, description }: { selected: boolean; onClick: () => void; title: string; description: string }) { return <button type="button" onClick={onClick} className={`selection-tile min-h-20 !items-start text-left ${selected ? 'selection-tile-active' : ''}`}><span><strong className="block text-xs text-white">{title}</strong><span className="block text-[11px] text-zinc-400 mt-1 leading-relaxed">{description}</span></span>{selected && <Check className="icon-xs flex-shrink-0" />}</button>; }
+function Summary({ label, value }: { label: string; value: string }) { return <div className="grid sm:grid-cols-[140px_1fr] gap-1"><span className="text-zinc-500">{label}</span><span className="text-zinc-200">{value || 'Not provided'}</span></div>; }

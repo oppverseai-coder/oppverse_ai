@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { callGroq } from '@/lib/integrations/groq';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,9 @@ export async function POST(req: Request) {
     let rawText = '';
     let fileName = 'Uploaded_Resume.pdf';
     let fileSize = '150 KB';
-    let userId: string | null = null;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const contentType = req.headers.get('content-type') || '';
 
@@ -16,7 +19,6 @@ export async function POST(req: Request) {
       const formData = await req.formData();
       const file = formData.get('file') as File | null;
       const textInput = formData.get('cvText') as string | null;
-      userId = formData.get('userId') as string | null;
 
       if (file) {
         fileName = file.name;
@@ -44,7 +46,6 @@ export async function POST(req: Request) {
       const json = await req.json();
       rawText = json.cvText || '';
       fileName = json.fileName || 'Pasted_Resume_Text.txt';
-      userId = json.userId || null;
     }
 
     if (!rawText || rawText.trim().length === 0) {
@@ -52,14 +53,14 @@ export async function POST(req: Request) {
     }
 
     // High-Fidelity Extraction Engine
-    const parsedData = extractProfileFromText(rawText, fileName);
+    const deterministicData = extractProfileFromText(rawText, fileName);
+    const parsedData = await extractProfileWithAI(rawText, deterministicData);
 
     // If authenticated, optionally save to Supabase vault_documents
-    if (userId) {
+    if (user.id) {
       try {
-        const supabase = createClient();
         await supabase.from('vault_documents').insert({
-          user_id: userId,
+          user_id: user.id,
           name: fileName,
           document_type: 'Master Resume / CV',
           file_size: fileSize,
@@ -83,6 +84,44 @@ export async function POST(req: Request) {
   } catch (err: any) {
     console.error('Error in parse-cv API:', err);
     return NextResponse.json({ error: err.message || 'Failed to extract resume data' }, { status: 500 });
+  }
+}
+
+async function extractProfileWithAI(text: string, fallback: ReturnType<typeof extractProfileFromText>) {
+  const response = await callGroq([
+    { role: 'system', content: 'Extract CV facts into JSON. Never invent information. Return roles, skills, industries, achievements, education, projects, and interests. Every item must include value and an exact evidence quote from the CV. Return suggestedRole only when directly supported. Do not infer citizenship from location.' },
+    { role: 'user', content: text.slice(0, 16000) },
+  ], { jsonMode: true, temperature: 0, max_tokens: 1800 });
+  if (!response) return fallback;
+
+  try {
+    const parsed = JSON.parse(response);
+    const supported = (items: unknown) => Array.isArray(items)
+      ? items.filter((item) => item?.value && item?.evidence && text.toLowerCase().includes(String(item.evidence).toLowerCase()))
+      : [];
+    const aiSkills = supported(parsed.skills).map((item) => String(item.value).trim());
+    const roles = supported(parsed.roles);
+    const suggestedRole = roles[0]?.value || (parsed.suggestedRole?.evidence && text.toLowerCase().includes(String(parsed.suggestedRole.evidence).toLowerCase()) ? parsed.suggestedRole.value : '');
+    return {
+      ...fallback,
+      skills: Array.from(new Set([...fallback.skills, ...aiSkills])),
+      industries: supported(parsed.industries),
+      achievements: supported(parsed.achievements),
+      projects: supported(parsed.projects),
+      professionalInterests: supported(parsed.interests),
+      suggestedPersonas: suggestedRole ? [{
+        id: 'suggested-persona',
+        name: suggestedRole,
+        role: suggestedRole,
+        headline: aiSkills.slice(0, 3).join(' / '),
+        targetUniverses: ['Jobs'],
+        skills: aiSkills.slice(0, 8),
+        goals: [],
+      }] : fallback.suggestedPersonas,
+      extractionMethod: 'groq-evidence-backed',
+    };
+  } catch {
+    return fallback;
   }
 }
 
@@ -112,7 +151,6 @@ function extractProfileFromText(text: string, fileName: string) {
       detectedCitizenship.push(c);
     }
   });
-  if (detectedCitizenship.length === 0) detectedCitizenship.push('Nigeria');
 
   // 4. Skills Taxonomy Ingestion
   const skillTaxonomy = [
@@ -130,91 +168,51 @@ function extractProfileFromText(text: string, fileName: string) {
     }
   });
 
-  // Default fallback skills if minimal matches
-  if (matchedSkills.length < 4) {
-    matchedSkills.push('Product Marketing', 'GTM Strategy', 'AI Systems Architecture', 'Positioning & Messaging');
-  }
-
   // 5. Work History Ingestion
   const workHistory: Array<{ role: string; company: string; location: string; startDate: string; endDate: string; description: string }> = [];
   
   // Look for date blocks like (2024 - 2026, Aug 2026 - Present, etc.)
   const roleKeywords = ['Founding GTM & Product Marketing Lead', 'Product Marketing Manager', 'AI Systems Consultant', 'Growth Lead', 'Software Engineer', 'Senior Strategist'];
   
-  workHistory.push({
-    role: 'Founding GTM & Product Marketing Lead',
-    company: 'Conductor (Vera Pax Technologies)',
-    location: 'Remote',
-    startDate: 'Aug 2026',
-    endDate: 'Present',
-    description: 'Directing commercial engine, positioning around Time Intelligence, and autonomous growth experimentation.'
-  });
-
-  workHistory.push({
-    role: 'Product Marketing Manager',
-    company: 'Koppoh',
-    location: 'Lagos, Nigeria',
-    startDate: '2024',
-    endDate: '2026',
-    description: 'Directed flagship educational course launches (BOP) and creator monetization systems.'
-  });
 
   // 6. Education Ingestion
-  const education = [
-    {
-      degree: 'B.Sc. in Computer Science / Information Systems',
-      institution: 'University of Lagos',
-      field: 'Technology & Software Systems',
-      graduationYear: '2019'
-    }
-  ];
+  const education: Array<{ degree: string; institution: string; field: string; graduationYear: string }> = [];
 
   // 7. Seniority & Years of Experience Calculation
   const yearsMatch = clean.match(/(\d+)\+?\s*(years|yrs)/i);
-  let yearsOfExperience = yearsMatch ? parseInt(yearsMatch[1], 10) : 6;
-  if (yearsOfExperience > 30) yearsOfExperience = 6;
+  let yearsOfExperience = yearsMatch ? parseInt(yearsMatch[1], 10) : 0;
+  if (yearsOfExperience > 50) yearsOfExperience = 0;
 
-  let careerLevel: 'Early-Career' | 'Mid-Career' | 'Senior' | 'Executive' | 'Founder' | 'Student' = 'Senior';
+  let careerLevel: 'Early-Career' | 'Mid-Career' | 'Senior' | 'Executive' | 'Founder' | 'Student' = 'Early-Career';
   if (yearsOfExperience >= 10) careerLevel = 'Executive';
   else if (yearsOfExperience >= 5) careerLevel = 'Senior';
   else if (yearsOfExperience >= 3) careerLevel = 'Mid-Career';
   else careerLevel = 'Early-Career';
 
-  // 8. Persona Suggestions
-  const suggestedPersonas = [
-    {
-      id: 'persona_pmm',
-      name: 'Product Marketing & GTM Leader',
-      role: 'Senior Product Marketing Manager / Founding GTM Lead',
-      headline: 'B2B SaaS, Positioning, Growth & Time Intelligence',
-      targetUniverses: ['Jobs', 'Fellowships', 'Conferences'],
-      skills: matchedSkills.slice(0, 5),
-      goals: ['Lead Global Product Launches', 'Win Top-Tier Fellowships']
-    },
-    {
-      id: 'persona_ai_consultant',
-      name: 'AI Revenue Systems Architect',
-      role: 'AI Workflow Consultant',
-      headline: 'Agentic AI Systems, Claude Code & Automated Operations',
-      targetUniverses: ['Grants', 'Accelerators', 'Fellowships', 'Speaking'],
-      skills: ['Agentic AI Mastery', 'Claude Code', 'n8n Automation', 'Prompt Engineering'],
-      goals: ['Secure International AI Grants', 'Keynote Global AI Summits']
-    }
-  ];
+  const likelyRoleLine = lines.find((line) => /manager|engineer|designer|researcher|founder|consultant|student|analyst|director|officer|specialist|developer/i.test(line)) || '';
+  const suggestedPersonas = likelyRoleLine ? [{
+    id: 'suggested-persona',
+    name: likelyRoleLine,
+    role: likelyRoleLine,
+    headline: matchedSkills.slice(0, 3).join(' / '),
+    targetUniverses: ['Jobs'],
+    skills: matchedSkills.slice(0, 5),
+    goals: [],
+  }] : [];
 
   return {
     fullName,
     email,
-    headline: `${suggestedPersonas[0].role} \u2022 ${yearsOfExperience}+ Years Experience`,
+    headline: likelyRoleLine,
     yearsOfExperience,
     careerLevel,
     citizenship: detectedCitizenship,
-    countryOfResidence: detectedCitizenship[0] || 'Nigeria',
-    city: 'Lagos',
+    countryOfResidence: detectedCitizenship[0] || '',
+    city: '',
     skills: Array.from(new Set(matchedSkills)),
     education,
     workHistory,
     suggestedPersonas,
-    profileStrength: 92
+    profileStrength: Math.min(85, 20 + matchedSkills.length * 5 + (email ? 10 : 0) + (likelyRoleLine ? 15 : 0))
   };
 }

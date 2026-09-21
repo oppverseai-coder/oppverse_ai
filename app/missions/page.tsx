@@ -17,7 +17,6 @@ import {
   RefreshCw,
   Sparkles
 } from 'lucide-react';
-import { sampleMissions } from '@/lib/sample-data';
 import { Mission } from '@/lib/types';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
@@ -25,7 +24,7 @@ import { fetchUserMissions, saveUserMission } from '@/lib/supabase/db';
 
 export default function MissionsPage() {
   const { user } = useAuth();
-  const [missions, setMissions] = useState<Mission[]>(sampleMissions);
+  const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newPrompt, setNewPrompt] = useState('');
@@ -39,7 +38,7 @@ export default function MissionsPage() {
       setLoading(true);
       try {
         const data = await fetchUserMissions(user?.id);
-        if (data && data.length > 0) setMissions(data);
+        setMissions(data || []);
       } catch (e) {
         console.warn('Error loading missions:', e);
       } finally {
@@ -97,8 +96,7 @@ export default function MissionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           missionId,
-          prompt,
-          userId: user?.id
+          prompt
         })
       });
       const data = await res.json();
@@ -123,7 +121,7 @@ export default function MissionsPage() {
         await fetch('/api/missions/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ missionId: m.id, prompt: m.prompt, userId: user?.id })
+          body: JSON.stringify({ missionId: m.id, prompt: m.prompt })
         });
       }
       setMissions(prev => prev.map(m => ({ ...m, matchCount: m.matchCount + 1, lastRunAt: new Date().toISOString() })));

@@ -2,25 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { Bookmark, ExternalLink, ArrowRight, MapPin, Clock, Loader2 } from 'lucide-react';
-import { sampleOpportunities } from '@/lib/sample-data';
 import { Opportunity } from '@/lib/types';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchOpportunities } from '@/lib/supabase/db';
+import { fetchUserApplications, mapDbOpportunityToModel } from '@/lib/supabase/db';
 
 export default function SavedPage() {
   const { user } = useAuth();
-  const [savedOpps, setSavedOpps] = useState<Opportunity[]>(sampleOpportunities.slice(0, 2));
+  const [savedOpps, setSavedOpps] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadSaved() {
       setLoading(true);
       try {
-        const opps = await fetchOpportunities();
-        if (opps && opps.length > 0) {
-          setSavedOpps(opps.slice(0, 3));
-        }
+        const applications = await fetchUserApplications(user?.id);
+        const saved = (applications || [])
+          .filter((item: any) => item.status === 'Saved' && item.opportunities)
+          .map((item: any) => mapDbOpportunityToModel(item.opportunities));
+        setSavedOpps(saved);
       } catch (e) {
         console.warn('Error loading saved opportunities:', e);
       } finally {
@@ -52,6 +52,11 @@ export default function SavedPage() {
         <div className="p-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
           <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
           <span className="text-xs">Loading saved opportunities...</span>
+        </div>
+      ) : savedOpps.length === 0 ? (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-10 text-center">
+          <p className="text-sm font-semibold text-white">No saved opportunities yet</p>
+          <p className="mt-2 text-xs text-zinc-400">Save an opportunity and it will appear here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

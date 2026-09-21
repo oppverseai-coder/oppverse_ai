@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run test:routes",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:routes": "node scripts/verify-route-contract.mjs",
+    "test:personalization": "tsx scripts/test-personalization.ts",
+    "personalization:backfill": "node scripts/backfill-opportunity-semantics.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.4.0",
@@ -28,6 +32,7 @@
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
+    "tsx": "^4.23.15",
     "typescript": "^5.5.4"
   }
 }

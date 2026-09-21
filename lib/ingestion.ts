@@ -1,5 +1,7 @@
 ﻿import { createClient } from '@/lib/supabase/client';
 import { Opportunity } from '@/lib/types';
+import { createSemanticVector } from '@/lib/personalization/semantic';
+import { inferOpportunityCategory, isLikelyOpportunity } from '@/lib/opportunity-quality';
 
 export interface ScrapedOpportunityInput {
   title: string;
@@ -118,6 +120,17 @@ export async function runOpportunityIngestion(sourceName?: string) {
       results.scrapedCount += items.length;
 
       for (const item of items) {
+        const summary = item.summary || item.description.slice(0, 120);
+        if (!isLikelyOpportunity({ title: item.title, summary, description: item.description })) {
+          results.errors.push(`Rejected non-opportunity content: ${item.title}`);
+          continue;
+        }
+        const category = inferOpportunityCategory({
+          title: item.title,
+          summary,
+          description: item.description,
+          category: item.category as Opportunity['category'],
+        });
         // Check if opportunity exists in Supabase by title
         const { data: existing, error: fetchErr } = await supabase
           .from('opportunities')
@@ -130,13 +143,14 @@ export async function runOpportunityIngestion(sourceName?: string) {
           continue;
         }
 
+        const semanticText = `Title: ${item.title}\nOrganization: ${item.provider}\nType: ${category}\nSummary: ${summary}\nDescription: ${item.description}\nExperience: ${item.experience_required || 'not specified'}\nLocation: ${item.location_type || 'Remote'}; ${item.host_country || 'Worldwide'}\nFunding: ${item.funding_status || 'Fully Funded'}; ${item.funding_amount || ''}`;
         const opportunityPayload = {
           title: item.title,
           provider: item.provider,
-          category: item.category,
+          category,
           subcategory: item.tags?.[0] || 'General',
           description: item.description,
-          summary: item.summary || item.description.slice(0, 120),
+          summary,
           location_type: item.location_type || 'Remote',
           host_country: item.host_country || 'Worldwide',
           funding_status: item.funding_status || 'Fully Funded',
@@ -149,7 +163,10 @@ export async function runOpportunityIngestion(sourceName?: string) {
           required_documents: ['Resume / CV', 'Application Form'],
           experience_required: item.experience_required || 'All Levels',
           verification_status: 'Verified',
-          is_featured: true
+          is_featured: true,
+          semantic_text: semanticText,
+          embedding: createSemanticVector(semanticText),
+          embedding_updated_at: new Date().toISOString()
         };
 
         if (existing) {

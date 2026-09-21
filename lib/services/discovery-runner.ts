@@ -4,8 +4,9 @@ import { searchTavily } from '@/lib/integrations/tavily';
 import { scrapeWithFirecrawl } from '@/lib/integrations/firecrawl';
 import { normalizeUrl, generateOpportunityFingerprint } from './deduplication';
 import { generateProfileSearchQueries } from './query-planner';
-import { UserProfile } from '@/lib/types';
-import { initialProfile } from '@/lib/sample-data';
+import { Opportunity, UserProfile } from '@/lib/types';
+import { createSemanticVector } from '@/lib/personalization/semantic';
+import { inferOpportunityCategory, isLikelyOpportunity } from '@/lib/opportunity-quality';
 
 export interface DiscoveryRunResult {
   runId: string;
@@ -23,7 +24,6 @@ export interface DiscoveryRunResult {
  */
 export async function runEnterpriseDiscovery(profile?: UserProfile): Promise<DiscoveryRunResult> {
   const supabase = createClient();
-  const userProfile = profile || initialProfile;
   const errors: string[] = [];
 
   // 1. Create Discovery Run record
@@ -63,6 +63,9 @@ export async function runEnterpriseDiscovery(profile?: UserProfile): Promise<Dis
           discoveredUrlsCount += feedItems.length;
 
           for (const item of feedItems) {
+            const description = item.description || item.content || item.title;
+            const summary = description.slice(0, 140);
+            if (!isLikelyOpportunity({ title: item.title, summary, description })) continue;
             const cleanUrl = normalizeUrl(item.link);
             const fingerprint = generateOpportunityFingerprint(item.title, source.name, item.pubDate);
 
@@ -96,15 +99,17 @@ export async function runEnterpriseDiscovery(profile?: UserProfile): Promise<Dis
 
             // Insert into canonical public.opportunities
             const deadlineDate = new Date(Date.now() + 30 * 86400000).toISOString();
-            const category = (source.opportunity_types?.[0] as any) || 'Fellowships';
+            const sourceCategory = (source.opportunity_types?.[0] as Opportunity['category']) || 'Fellowships';
+            const category = inferOpportunityCategory({ title: item.title, summary, description, category: sourceCategory });
+            const semanticText = `Title: ${item.title}\nOrganization: ${source.name}\nType: ${category}\nDescription: ${description}\nLocation: ${source.country || 'Worldwide'}\nFunding: Unverified`;
 
             const { error: oppInsertErr } = await supabase.from('opportunities').insert([{
               title: item.title,
               provider: source.name,
               category,
               subcategory: source.opportunity_types?.[1] || 'General',
-              description: item.description || `${item.title} - Sourced directly from ${source.name}.`,
-              summary: (item.description || item.title).slice(0, 140),
+              description,
+              summary,
               official_source_url: cleanUrl,
               application_url: cleanUrl,
               source_url: cleanUrl,
@@ -112,17 +117,20 @@ export async function runEnterpriseDiscovery(profile?: UserProfile): Promise<Dis
               deadline: deadlineDate,
               location_type: 'Remote',
               host_country: source.country || 'Worldwide',
-              funding_status: 'Fully Funded',
+              funding_status: 'Unpaid',
               eligible_countries: source.regions || ['All'],
               application_complexity: 'Moderate',
               required_documents: ['Resume / CV', 'Application Form'],
-              verification_status: 'Verified',
+              verification_status: 'Unverified',
               is_featured: true,
               fingerprint,
               evidence_quotes: [
                 `Verified via ${source.name} direct feed`,
                 `Original URL: ${cleanUrl}`
-              ]
+              ],
+              semantic_text: semanticText,
+              embedding: createSemanticVector(semanticText),
+              embedding_updated_at: new Date().toISOString()
             }]);
 
             if (!oppInsertErr) {
@@ -141,7 +149,7 @@ export async function runEnterpriseDiscovery(profile?: UserProfile): Promise<Dis
     }
 
     // 4. Execute Profile-Aware Query Planner for Tavily (if key available)
-    const plannedQueries = generateProfileSearchQueries(userProfile);
+    const plannedQueries = profile ? generateProfileSearchQueries(profile) : [];
     for (const pq of plannedQueries.slice(0, 3)) {
       const tavilyResults = await searchTavily(pq.query);
       discoveredUrlsCount += tavilyResults.length;
@@ -160,26 +168,34 @@ export async function runEnterpriseDiscovery(profile?: UserProfile): Promise<Dis
 
         const scraped = await scrapeWithFirecrawl(cleanUrl);
         candidatesCount++;
+        const description = scraped?.markdown || tr.content;
+        const summary = tr.content.slice(0, 140);
+        if (!isLikelyOpportunity({ title: tr.title, summary, description })) continue;
+        const category = inferOpportunityCategory({ title: tr.title, summary, description, category: pq.targetCategory });
+        const semanticText = `Title: ${tr.title}\nOrganization: ${new URL(cleanUrl).hostname.replace(/^www\./, '')}\nType: ${category}; ${pq.angle}\nSummary: ${tr.content}\nDescription: ${description}\nLocation: Unverified\nFunding: Unverified`;
 
         const { error: insErr } = await supabase.from('opportunities').insert([{
           title: tr.title,
           provider: new URL(cleanUrl).hostname.replace(/^www\./, ''),
-          category: pq.targetCategory,
+          category,
           subcategory: pq.angle,
-          description: scraped?.markdown || tr.content,
-          summary: tr.content.slice(0, 140),
+          description,
+          summary,
           official_source_url: cleanUrl,
           application_url: cleanUrl,
           source_url: cleanUrl,
           deadline: new Date(Date.now() + 45 * 86400000).toISOString(),
           location_type: 'Remote',
           host_country: 'Worldwide',
-          funding_status: 'Fully Funded',
+          funding_status: 'Unpaid',
           eligible_countries: ['All'],
           application_complexity: 'Moderate',
           required_documents: ['CV'],
-          verification_status: 'Verified',
-          is_featured: false
+          verification_status: 'Unverified',
+          is_featured: false,
+          semantic_text: semanticText,
+          embedding: createSemanticVector(semanticText),
+          embedding_updated_at: new Date().toISOString()
         }]);
 
         if (!insErr) insertedCount++;

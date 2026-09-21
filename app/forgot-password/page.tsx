@@ -43,11 +43,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="w-9 h-9 object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform" />
+            <img src="/brand/oppverse-icon-dark.png" alt="Oppverse AI" className="brand-icon w-9 h-9 object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform" />
             <span className="font-display font-semibold text-2xl tracking-tight text-white">
               Oppverse AI
             </span>

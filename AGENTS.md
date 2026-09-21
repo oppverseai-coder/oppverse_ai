@@ -74,3 +74,39 @@ Before running any `git commit`, `git push`, or `vercel deploy`:
 
 - **Aesthetics & UI:** Premium dark-mode/modern aesthetic, fluid micro-interactions, responsive typography, crisp information architecture.
 - **Safety in Script Execution:** Node.js/Python scripts must cleanly resolve all promises/code paths without hanging.
+
+## 🎨 Immutable Design, Brand & Theme Contract (Mandatory)
+
+Before any UI, styling, navigation, authentication, shell, route, Figma, generator, or deployment work, read and follow [`docs/DESIGN_AND_ROUTE_CONTRACT.md`](docs/DESIGN_AND_ROUTE_CONTRACT.md).
+
+- Do not modify Oppverse branding, typography, color identity, light/dark theme architecture, selected-state behavior, landing-page presentation, or application layout as collateral work.
+- Oppverse violet is reserved for primary actions, selected filters, active navigation, and focus states. Inactive controls remain neutral in both themes.
+- Dark mode remains near-black. Light mode remains a true-white workspace with warm off-white navigation. The landing page remains independently dark.
+- Do not introduce gradients, glow, neon, AI sparkles, emoji icons, decorative generated icons, or a second icon system.
+- Do not let Figma imports, UI generators, formatters, component libraries, or automated agents overwrite protected files or establish a parallel design system.
+- A change to any protected rule requires an explicit user request naming that exact change. General requests such as “improve,” “fix,” “deploy,” “add auth,” or “build onboarding” do not grant permission.
+
+---
+
+## 🚧 Route Ownership Contract (Mandatory)
+
+The public website and authenticated product are deliberately separate. This contract must be preserved in every change:
+
+| Route | Owner | Rule |
+| :--- | :--- | :--- |
+| `/` | Public landing page | This is the main domain and must remain a complete public marketing page. Never replace it with the dashboard and never redirect it to `/app`. |
+| `/app` | Opportunity Universe | This is the authenticated application home. It must remain protected by authentication. |
+| `/login`, `/signup` | Authentication | Public auth routes. Successful signup proceeds directly to `/onboarding`. |
+| `/onboarding` | Post-signup onboarding | Protected route for incomplete profiles. |
+
+Additional invariants:
+
+- `app/page.tsx` owns the public landing page. Do not move the authenticated dashboard into this file.
+- `app/app/page.tsx` owns the Opportunity Universe dashboard.
+- The sidebar, mobile navigation, application logo, and authenticated dashboard links must use `/app` for Opportunity Universe.
+- The application shell, sidebar, and authenticated header must not wrap the public landing page.
+- Middleware must protect `/app` but must not protect or redirect `/`.
+- Do not alter or remove the landing page while working on authentication, onboarding, dashboards, or application UI unless the user explicitly requests landing-page changes.
+- Run `npm run test:routes` after navigation, shell, middleware, authentication, or routing changes. `npm run build` also runs this guard automatically.
+
+See `docs/ROUTING.md` for the full route boundary and verification checklist.

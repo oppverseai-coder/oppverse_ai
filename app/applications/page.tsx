@@ -24,7 +24,7 @@ import {
   Wand2
 } from 'lucide-react';
 import { ApplicationStatus, UserProfile } from '@/lib/types';
-import { initialProfile } from '@/lib/sample-data';
+import { createEmptyProfile } from '@/lib/empty-data';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchUserApplications, fetchUserVaultDocs, fetchUserProfile } from '@/lib/supabase/db';
 
@@ -51,7 +51,7 @@ interface VaultDoc {
 
 export default function ApplicationsPage() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [profile, setProfile] = useState<UserProfile>(() => createEmptyProfile());
   const [activeTab, setActiveTab] = useState<'kanban' | 'vault'>('kanban');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,90 +63,19 @@ export default function ApplicationsPage() {
   const [tailoredResult, setTailoredResult] = useState<{ title: string; content: string } | null>(null);
   const [saveVaultSuccess, setSaveVaultSuccess] = useState(false);
 
-  const [apps, setApps] = useState<TrackedApp[]>([
-    {
-      id: "app_1",
-      oppId: "opp_002",
-      title: "Berlin AI & Emerging Tech Leadership Fellowship",
-      provider: "Robert Bosch Foundation",
-      category: "Fellowships",
-      status: "Preparing",
-      deadline: "2026-10-08T23:59:59Z",
-      checklist: [
-        { id: "c1", task: "Tailor CV to highlight AI GTM impact", completed: true },
-        { id: "c2", task: "Draft 800-word Motivation Statement", completed: false },
-        { id: "c3", task: "Request reference from VP of Engineering", completed: false }
-      ],
-      notes: "Focus on Nigerian AI ecosystem case studies and Conductor time intelligence framework."
-    },
-    {
-      id: "app_2",
-      oppId: "opp_004",
-      title: "Call for Speakers: AI Product Summit London",
-      provider: "Product Led Alliance",
-      category: "Speaking",
-      status: "Ready",
-      deadline: "2026-09-30T23:59:59Z",
-      checklist: [
-        { id: "c4", task: "Submit 300-word Session Abstract", completed: true },
-        { id: "c5", task: "Link past keynote recording", completed: true }
-      ],
-      notes: "Talk title: Building Agentic GTM Systems in 2026."
-    },
-    {
-      id: "app_3",
-      oppId: "opp_001",
-      title: "Senior Product Marketing Manager",
-      provider: "Synthesia AI",
-      category: "Jobs",
-      status: "Applied",
-      deadline: "2026-10-15T23:59:59Z",
-      checklist: [
-        { id: "c6", task: "Submit application form", completed: true }
-      ],
-      notes: "Referred by network connection on LinkedIn."
-    }
-  ]);
+  const [apps, setApps] = useState<TrackedApp[]>([]);
 
-  const [selectedAppId, setSelectedAppId] = useState<string>("app_1");
+  const [selectedAppId, setSelectedAppId] = useState<string>('');
 
-  const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>([
-    {
-      id: "v1",
-      name: "Tomide_Williams_Master_CV_2026.pdf",
-      type: "Master Resume / CV",
-      size: "248 KB",
-      updatedAt: "Sep 18, 2026",
-      tags: ["CV", "Verified", "Product Marketing", "AI Systems"]
-    },
-    {
-      id: "v2",
-      name: "Global_Leadership_Motivation_Statement_v3.docx",
-      type: "Motivation Statement",
-      size: "42 KB",
-      updatedAt: "Sep 15, 2026",
-      tags: ["Fellowships", "Grants", "Draft"]
-    },
-    {
-      id: "v3",
-      name: "Executive_Bio_and_Speaker_Headshot.zip",
-      type: "Speaker Kit & Bio",
-      size: "4.2 MB",
-      updatedAt: "Sep 10, 2026",
-      tags: ["Conferences", "Speaking", "High-Res"]
-    },
-    {
-      id: "v4",
-      name: "Recommendation_Letter_Fauzan_CEO.pdf",
-      type: "Reference Letter",
-      size: "180 KB",
-      updatedAt: "Aug 28, 2026",
-      tags: ["Reference", "Endorsement"]
-    }
-  ]);
+  const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>([]);
 
   useEffect(() => {
     async function loadData() {
+      if (user?.id) {
+        setApps([]);
+        setVaultDocs([]);
+        setSelectedAppId('');
+      }
       try {
         const [dbApps, dbDocs, userProf] = await Promise.all([
           fetchUserApplications(user?.id),
@@ -221,12 +150,8 @@ export default function ApplicationsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          opportunityTitle: selectedApp.title,
-          provider: selectedApp.provider,
-          category: selectedApp.category,
-          documentType: tailoredDocType,
-          profile,
-          userId: user?.id
+          opportunityId: selectedApp.oppId,
+          artifactType: tailoredDocType,
         })
       });
       const data = await res.json();
@@ -326,7 +251,7 @@ export default function ApplicationsPage() {
                       </span>
                     </div>
 
-                    <div className="space-y-2.5 min-h-[220px] rounded-xl bg-zinc-950/40 p-1.5 border border-dashed border-zinc-900">
+                    <div className="application-empty-slot space-y-2.5 min-h-[220px] rounded-xl bg-zinc-950/40 p-1.5 border border-dashed border-zinc-900">
                       {statusApps.map(app => {
                         const isSelected = app.id === selectedAppId;
                         const completedCount = app.checklist.filter(c => c.completed).length;

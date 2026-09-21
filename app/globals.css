@@ -20,6 +20,12 @@
     --primary: #f4f4f5;
     --primary-hover: #ffffff;
     --primary-foreground: #18181b;
+    --accent: #8272e8;
+    --accent-hover: #9182f0;
+    --accent-strong: #aaa0f4;
+    --accent-foreground: #ffffff;
+    --accent-soft: rgba(130, 114, 232, 0.11);
+    --accent-border: rgba(145, 130, 240, 0.34);
     --focus: #d4d4d8;
     --overlay: rgba(0, 0, 0, 0.72);
     --success: #55b982;
@@ -37,25 +43,31 @@
   :root.light {
     --background: #ffffff;
     --surface: #ffffff;
-    --surface-raised: #ffffff;
-    --surface-subtle: #f7f7f8;
-    --surface-hover: #f2f2f3;
-    --border: #d9d9de;
-    --border-strong: #a7a7b0;
-    --text-primary: #111113;
-    --text-secondary: #343438;
-    --text-muted: #5f5f67;
-    --text-subtle: #7c7c85;
-    --primary: #111113;
-    --primary-hover: #242427;
+    --surface-raised: #f7f7f5;
+    --surface-subtle: #fbfbfa;
+    --surface-hover: #f0f0ed;
+    --border: #e1e1dc;
+    --border-strong: #c5c5bf;
+    --text-primary: #101010;
+    --text-secondary: #353532;
+    --text-muted: #62625d;
+    --text-subtle: #777771;
+    --primary: #18181b;
+    --primary-hover: #27272a;
     --primary-foreground: #ffffff;
-    --focus: #3f3f46;
+    --accent: #6757d7;
+    --accent-hover: #5949c4;
+    --accent-strong: #5140b9;
+    --accent-foreground: #ffffff;
+    --accent-soft: rgba(103, 87, 215, 0.08);
+    --accent-border: rgba(103, 87, 215, 0.28);
+    --focus: #6757d7;
     --overlay: rgba(24, 24, 27, 0.54);
     --success: #18794e;
     --warning: #91640f;
     --danger: #b4232c;
-    --shadow-menu: 0 12px 30px rgba(24, 24, 27, 0.12), 0 1px 2px rgba(24, 24, 27, 0.06);
-    --shadow-modal: 0 24px 72px rgba(24, 24, 27, 0.2);
+    --shadow-menu: 0 16px 36px rgba(24, 24, 27, 0.1), 0 1px 3px rgba(24, 24, 27, 0.06);
+    --shadow-modal: 0 24px 72px rgba(24, 24, 27, 0.16);
   }
 
   html {
@@ -192,11 +204,54 @@
   }
 
   .btn-primary {
-    background: var(--primary);
-    color: var(--primary-foreground);
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border-color: color-mix(in srgb, var(--accent) 82%, black);
   }
 
-  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .onboarding-input {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-control);
+    background: var(--surface-subtle);
+    padding: 10px 12px;
+    color: var(--text-primary);
+    font-size: 12px;
+    outline: none;
+  }
+
+  .onboarding-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .selection-tile {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    background: var(--surface-subtle);
+    padding: 10px 12px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .selection-tile:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+  }
+
+  .selection-tile-active {
+    border-color: var(--accent-border);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+  }
 
   .btn-secondary {
     background: var(--surface-raised);
@@ -354,12 +409,24 @@
 .bg-slate-900\/80,
 .bg-slate-900\/60,
 .bg-slate-900\/40,
-.bg-zinc-950 { background-color: var(--surface-subtle) !important; }
+.bg-zinc-950,
+.bg-zinc-950\/95,
+.bg-zinc-950\/60,
+.bg-zinc-950\/40 { background-color: var(--surface-subtle) !important; }
 
 .bg-slate-800,
 .bg-slate-800\/90,
 .bg-slate-800\/80,
-.bg-zinc-800 { background-color: var(--surface-raised) !important; }
+.bg-zinc-800,
+.bg-zinc-800\/90,
+.bg-zinc-800\/80 { background-color: var(--surface-raised) !important; }
+
+.bg-zinc-900,
+.bg-zinc-900\/90,
+.bg-zinc-900\/80,
+.bg-zinc-900\/70,
+.bg-zinc-900\/60,
+.bg-zinc-900\/40 { background-color: var(--surface-raised) !important; }
 
 .bg-zinc-700 { background-color: var(--surface-hover) !important; }
 .bg-zinc-100,
@@ -402,6 +469,11 @@
 .border-slate-800\/60,
 .border-zinc-700,
 .border-zinc-800,
+.border-zinc-900,
+.border-zinc-900\/90,
+.border-zinc-900\/80,
+.border-zinc-900\/70,
+.border-zinc-900\/60,
 .border-indigo-500\/20,
 .border-indigo-500\/30,
 .border-indigo-500\/40,
@@ -485,12 +557,12 @@
 .animate-bounce { animation: none !important; }
 
 .sidebar-link-active {
-  border-color: var(--text-primary) !important;
-  background: var(--primary) !important;
-  color: var(--primary-foreground) !important;
+  border-color: color-mix(in srgb, var(--accent) 82%, black) !important;
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
 }
 
-.sidebar-link-active svg { color: var(--primary-foreground) !important; }
+.sidebar-link-active svg { color: var(--accent-foreground) !important; }
 
 .sidebar-link:not(.sidebar-link-active):hover {
   background: var(--surface-hover) !important;
@@ -504,8 +576,24 @@
 }
 
 .sidebar-link-active .nav-badge {
-  border-color: color-mix(in srgb, var(--primary-foreground) 32%, transparent);
-  color: var(--primary-foreground) !important;
+  border-color: color-mix(in srgb, var(--accent-foreground) 32%, transparent);
+  color: var(--accent-foreground) !important;
+}
+
+.control-selected {
+  border-color: color-mix(in srgb, var(--accent) 82%, black) !important;
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: 0 1px 2px rgba(20, 16, 48, 0.14);
+}
+
+.control-selected:hover {
+  background: var(--accent-hover) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.control-selected svg {
+  color: var(--accent-foreground) !important;
 }
 
 input[type="checkbox"] {
@@ -513,6 +601,115 @@ input[type="checkbox"] {
   height: 15px;
   accent-color: var(--primary);
 }
+
+.auth-shell {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+/* The product's light mode is a purpose-built white workspace. The public
+   landing route is forced to dark before paint and does not consume this layer. */
+html.light[data-theme-scope="product"] .app-shell,
+html.light[data-theme-scope="product"] .auth-shell {
+  background: var(--background);
+}
+
+html.light[data-theme-scope="product"] .app-header {
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, #ffffff 97%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+html.light[data-theme-scope="product"] .app-sidebar {
+  background: var(--surface-raised) !important;
+  border-color: var(--border) !important;
+  box-shadow: none;
+}
+
+html.light[data-theme-scope="product"] .app-main .glass-card,
+html.light[data-theme-scope="product"] .app-main .glass-panel,
+html.light[data-theme-scope="product"] .app-main [class*="bg-zinc-950"] {
+  background-color: var(--surface) !important;
+}
+
+html.light[data-theme-scope="product"] .app-main {
+  background: #ffffff;
+}
+
+html.light[data-theme-scope="product"] .app-main .glass-card,
+html.light[data-theme-scope="product"] .app-main .glass-panel {
+  box-shadow: 0 1px 2px rgba(16, 16, 16, 0.025);
+}
+
+html.light[data-theme-scope="product"] .app-main .glass-card:hover {
+  background: #fdfdfc !important;
+  box-shadow: 0 2px 8px rgba(16, 16, 16, 0.045);
+}
+
+html.light[data-theme-scope="product"] .application-empty-slot {
+  border-style: solid;
+  border-color: var(--border) !important;
+  background: var(--surface-subtle) !important;
+}
+
+html.light[data-theme-scope="product"] .product-ui .bg-white {
+  background-color: var(--primary) !important;
+}
+
+html.light[data-theme-scope="product"] .product-ui .border-white {
+  border-color: var(--primary) !important;
+}
+
+html.light[data-theme-scope="product"] .product-ui input,
+html.light[data-theme-scope="product"] .product-ui select,
+html.light[data-theme-scope="product"] .product-ui textarea {
+  background-color: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+html.light[data-theme-scope="product"] .product-ui input:hover,
+html.light[data-theme-scope="product"] .product-ui select:hover,
+html.light[data-theme-scope="product"] .product-ui textarea:hover {
+  border-color: #a7a7a0;
+}
+
+html.light[data-theme-scope="product"] .product-ui input::placeholder,
+html.light[data-theme-scope="product"] .product-ui textarea::placeholder {
+  color: var(--text-subtle);
+}
+
+html.light[data-theme-scope="product"] .product-ui .bg-rose-950\/10,
+html.light[data-theme-scope="product"] .product-ui .bg-rose-950\/30,
+html.light[data-theme-scope="product"] .product-ui .bg-rose-950\/40,
+html.light[data-theme-scope="product"] .product-ui .bg-rose-950\/60 {
+  background-color: color-mix(in srgb, var(--danger) 7%, var(--surface)) !important;
+}
+
+html.light[data-theme-scope="product"] .product-ui .bg-amber-950\/30,
+html.light[data-theme-scope="product"] .product-ui .bg-amber-950\/60 {
+  background-color: color-mix(in srgb, var(--warning) 8%, var(--surface)) !important;
+}
+
+html.light[data-theme-scope="product"] .product-ui .bg-emerald-950\/10,
+html.light[data-theme-scope="product"] .product-ui .bg-emerald-950\/60,
+html.light[data-theme-scope="product"] .product-ui .bg-emerald-950\/80 {
+  background-color: color-mix(in srgb, var(--success) 7%, var(--surface)) !important;
+}
+
+html.light[data-theme-scope="product"] .product-ui .bg-cyan-950\/20,
+html.light[data-theme-scope="product"] .product-ui .bg-cyan-950\/60,
+html.light[data-theme-scope="product"] .product-ui .bg-indigo-950\/40,
+html.light[data-theme-scope="product"] .product-ui .bg-indigo-950\/60,
+html.light[data-theme-scope="product"] .product-ui .bg-indigo-950\/80 {
+  background-color: var(--accent-soft) !important;
+}
+
+html.light[data-theme-scope="product"] .brand-icon {
+  content: url('/brand/oppverse-icon-light.png');
+}
+
 
 .app-main label {
   color: var(--text-secondary);

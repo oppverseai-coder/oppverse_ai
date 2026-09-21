@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutGrid, 
-  Compass, 
+  Search, 
   Target, 
   Briefcase, 
   MessageSquare 
@@ -15,8 +15,8 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Universe', href: '/', icon: LayoutGrid },
-    { name: 'Discover', href: '/discover', icon: Compass },
+    { name: 'Universe', href: '/app', icon: LayoutGrid },
+    { name: 'Discover', href: '/discover', icon: Search },
     { name: 'Missions', href: '/missions', icon: Target },
     { name: 'Tracker', href: '/applications', icon: Briefcase },
     { name: 'AI Agent', href: '/agent', icon: MessageSquare },
@@ -29,7 +29,7 @@ export default function BottomNav() {
     >
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href || (item.href === '/' && pathname === '/app');
+        const isActive = pathname === item.href;
 
         return (
           <Link
@@ -37,17 +37,17 @@ export default function BottomNav() {
             href={item.href}
             className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-colors ${
               isActive
-                ? 'text-white'
+                ? 'text-[var(--accent)]'
                 : 'text-zinc-500 hover:text-zinc-300'
             }`}
           >
             <div className={`p-1 rounded-xl transition-all ${
-              isActive ? 'bg-zinc-800/80 text-white' : ''
+              isActive ? 'control-selected' : ''
             }`}>
               <Icon className="w-5 h-5" />
             </div>
             <span className={`text-[10px] font-medium mt-0.5 ${
-              isActive ? 'text-white font-semibold' : 'text-zinc-500'
+              isActive ? 'text-[var(--accent)] font-semibold' : 'text-zinc-500'
             }`}>
               {item.name}
             </span>

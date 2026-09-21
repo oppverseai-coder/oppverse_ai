@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('oppverse-theme');var h=document.documentElement;h.classList.remove('light','dark');h.classList.add(t==='light'?'light':'dark');h.style.colorScheme=t==='light'?'light':'dark'}catch(e){}})();`,
+            __html: `(function(){try{var h=document.documentElement;var landing=location.pathname==='/';var t=landing?'dark':(localStorage.getItem('oppverse-theme')==='light'?'light':'dark');h.dataset.themeScope=landing?'landing':'product';h.classList.remove('light','dark');h.classList.add(t);h.style.colorScheme=t}catch(e){}})();`,
           }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

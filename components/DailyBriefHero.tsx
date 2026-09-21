@@ -3,7 +3,7 @@
 import React from 'react';
 import { ArrowRight, Bookmark, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { Opportunity, UserProfile } from '@/lib/types';
-import { evaluateOpportunityMatch } from '@/lib/matching';
+import { PersonalizedMatch } from '@/lib/personalization/matching';
 
 interface DailyBriefHeroProps {
   profile: UserProfile;
@@ -13,6 +13,7 @@ interface DailyBriefHeroProps {
   onPursue?: (opp: Opportunity) => void;
   onToggleSave: (oppId: string, e: React.MouseEvent) => void;
   savedOppIds: string[];
+  matches: Record<string, PersonalizedMatch>;
 }
 
 export default function DailyBriefHero({
@@ -23,11 +24,13 @@ export default function DailyBriefHero({
   onPursue,
   onToggleSave,
   savedOppIds,
+  matches,
 }: DailyBriefHeroProps) {
   const handleSelect = onInspect || onSelectOpportunity || (() => {});
   const activePersona = profile.personas.find((persona) => persona.id === profile.activePersonaId) || profile.personas[0];
   const ranked = opportunities
-    .map((opportunity) => ({ opportunity, match: evaluateOpportunityMatch(profile, opportunity) }))
+    .filter((opportunity) => matches[opportunity.id])
+    .map((opportunity) => ({ opportunity, match: matches[opportunity.id] }))
     .filter(({ match }) => match.eligibilityStatus === 'Eligible')
     .sort((a, b) => b.match.matchScore - a.match.matchScore);
   const featured = ranked[0];
@@ -39,10 +42,10 @@ export default function DailyBriefHero({
           Opportunity Universe
         </p>
         <h1 className="mt-2 text-[30px] font-semibold font-display leading-tight text-white sm:text-[34px]">
-          Good day, {profile.fullName.split(' ')[0]}.
+          Good day{profile.fullName ? `, ${profile.fullName.split(' ')[0]}` : ''}.
         </h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Opportunities ranked for your <span className="font-medium text-zinc-200">{activePersona.name}</span> profile.
+          Opportunities ranked for your <span className="font-medium text-zinc-200">{activePersona?.name || 'active'}</span> profile.
         </p>
       </div>
 

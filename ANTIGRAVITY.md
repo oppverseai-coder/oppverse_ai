@@ -1,12 +1,14 @@
-﻿# ANTIGRAVITY.md — Oppverse AI Development & Design Safeguards
+﻿# ANTIGRAVITY.md — Oppverse AI Development, Design & Engineering Safeguards
 
 > [!CRITICAL]
-> **MANDATORY PRE-FLIGHT INSTRUCTION FOR ANTIGRAVITY:**
-> Before writing any code, creating any file, running any script, or modifying any existing logic in `oppverse_ai`, Antigravity **MUST ALWAYS** read this file in full and strictly adhere to the 20 Immutable Rules below.
+> **MANDATORY PRE-FLIGHT INSTRUCTION FOR ANTIGRAVITY & AI CODING AGENTS:**
+> Before writing code, creating files, running scripts, or modifying logic in `oppverse_ai`, Antigravity **MUST ALWAYS** read this file in full and strictly adhere to the safeguards below.
+> 
+> *Synthesized from production engineering contracts and developer community feedback (Reddit r/programming, r/ChatGPTCoding, r/vibecoding) on AI agent failure modes.*
 
 ---
 
-## 🚫 The 20 Immutable Rules: What Antigravity Must NEVER Do
+## 🚫 The Core Immutable Rules: What Antigravity Must NEVER Do
 
 ### 🎨 SECTION 1: DESIGN, UI & VISUAL RESTRAINT (RULES 1–6)
 1. **NEVER MODIFY OR REDESIGN THE UI:** Do not redesign, rewrite, restyle, or alter existing UI components, cards, layouts, margins, or padding. Antigravity is strictly restricted to backend logic, data pipelines, API integrations, and bug fixes.
@@ -46,10 +48,25 @@
 
 ---
 
-### 🔐 SECTION 5: MULTI-ACCOUNT ISOLATION & WORKFLOW (RULES 18–20)
+### 🔐 SECTION 5: MULTI-ACCOUNT ISOLATION (RULES 18–20)
 18. **NEVER COMMIT OR PUSH UNDER AN UNAUTHORIZED GIT IDENTITY:** All Git commits must strictly use `oppverseai-coder <oppverseai@gmail.com>`. Never commit or push under `WilliamsBRAND` or any other client account.
 19. **NEVER DEPLOY TO UNAUTHORIZED ACCOUNTS OR TARGETS:** All Vercel deployments must target `oppverseai-coder` (`prj_8jBUAM72mrvkKkcAI56fFDZpsJQ2`). All Supabase operations must target organization `vdzophdkuweprnjztino` / project `phtikvfamizngfmliprh`.
 20. **NEVER START A TASK WITHOUT READING `ANTIGRAVITY.md` FIRST:** Every agent session must inspect and honor `ANTIGRAVITY.md` before executing any file changes or commands.
+
+---
+
+## ⚡ SECTION 6: DEVELOPER FEEDBACK SAFEGUARDS (ANTI-SLOP & CODE HYGIENE)
+
+*Based on developer community feedback regarding frequent AI coding agent failures:*
+
+21. **SURGICAL EDITS ONLY (NO RECKLESS FILE WIPING):** Never replace or rewrite an entire file when a targeted 5-line diff suffices. Replacing entire files frequently strips away edge-case handling, performance optimizations, and critical fixes.
+22. **NO UNSOLICITED REFACTORING OR SCOPE CREEP:** Fix only what was requested. Never refactor surrounding helper functions, change variable naming schemes, or restructure files just because you prefer a different style.
+23. **PRESERVE ALL COMMENTS & ARCHITECTURAL DOCS:** Never delete existing inline comments, docstrings, or code rationale.
+24. **ZERO PHANTOM DEPENDENCIES:** Never install new npm/pip packages or alter `package.json` / `package-lock.json` unless explicitly asked. Work strictly with the existing dependencies.
+25. **NEVER HALLUCINATE API SIGNATURES OR SDK METHODS:** Always verify function signatures, SDK methods, and Supabase query syntax against active workspace types.
+26. **NO COSMETIC CODE-CHURNING:** Never churn code by reformatting indentation, flipping single/double quotes, or re-ordering imports on working files.
+27. **SAFE SCRIPT EXECUTION (NO HANGING PROMISES):** All Node.js scripts and tools must resolve in every code path and never leave dangling promises or unhandled exceptions that lock the IDE.
+28. **PRE-FLIGHT BUILD & ROUTE VERIFICATION:** Always run `npm run test:routes` and `npx tsc --noEmit` before finishing any task to guarantee zero runtime regressions.
 
 ---
 

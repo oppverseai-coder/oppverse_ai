@@ -115,7 +115,7 @@ export default function DiscoverPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-zinc-800/80">
         <div className="flex items-center gap-3">
           <div className="icon-frame">
-            <Compass className="icon-md" />
+            <Search className="icon-md" />
           </div>
           <div>
             <h1 className="page-title font-display">

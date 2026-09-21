@@ -1,4 +1,4 @@
-﻿# OPPVERSE AI â€” WORKING MEMORY (LATEST STATE)
+﻿# OPPVERSE AI — WORKING MEMORY (LATEST STATE)
 
 **Last Updated:** 2026-09-21 06:12 WAT  
 **Project:** Oppverse AI (`C:\Projects\oppverse_ai`)  

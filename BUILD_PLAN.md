@@ -1,4 +1,4 @@
-﻿# OPPVERSE AI â€” MASTER BUILD PLAN & TECHNICAL ROADMAP
+﻿# OPPVERSE AI — MASTER BUILD PLAN & TECHNICAL ROADMAP
 **Product:** Oppverse AI (AI Opportunity Intelligence Platform)  
 **Version:** 1.0  
 **Founder / Product Lead:** Tomide Williams  
@@ -66,7 +66,7 @@ create table public.opportunities (
   host_country text,
   eligible_countries text[] default '{}', -- ['Nigeria', 'Ghana', 'All', etc.]
   funding_status text not null, -- 'Fully Funded', 'Partially Funded', 'Paid', 'Unpaid', 'Grant Award'
-  funding_amount text, -- e.g. "$50,000" or "Tuition + Â£1,500/mo stipend"
+  funding_amount text, -- e.g. "$50,000" or "Tuition + £1,500/mo stipend"
   application_complexity text default 'Moderate', -- 'Quick', 'Moderate', 'Heavy'
   required_documents text[] default '{}', -- ['CV', 'Motivation Letter', 'References']
   experience_required text,
@@ -128,18 +128,18 @@ create table public.applications (
 ## ðŸš€ 3. STEP-BY-STEP PHASED EXECUTION ROADMAP
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                           OPPVERSE BUILD JOURNEY                            â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚ Phase 0       â”‚ Project Scaffold, UI Design Tokens, Supabase DB & Auth     â”‚
-â”‚ Phase 1       â”‚ Profile Onboarding, CV AI Parsing & Persona Engine          â”‚
-â”‚ Phase 2       â”‚ Opportunity Database & Ingestion Engine (MVP 6 Categories)  â”‚
-â”‚ Phase 3       â”‚ Explainable Matching & Strict Eligibility Engine            â”‚
-â”‚ Phase 4       â”‚ Home Universe, Daily Brief & Category Shelves               â”‚
-â”‚ Phase 5       â”‚ Autonomous "My Missions" & Oppverse AI Chat Advisor         â”‚
-â”‚ Phase 6       â”‚ Application Workspace, Document Vault & Pipeline Tracker    â”‚
-â”‚ Phase 7       â”‚ Polish, Security, Multi-Account Verification & Deployment   â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────────────────────────────────────────────────────────────────────────┐
+┐‚                           OPPVERSE BUILD JOURNEY                            ┐‚
+┐œ───────────────┐¬─────────────────────────────────────────────────────────────┐¤
+┐‚ Phase 0       ┐‚ Project Scaffold, UI Design Tokens, Supabase DB & Auth     ┐‚
+┐‚ Phase 1       ┐‚ Profile Onboarding, CV AI Parsing & Persona Engine          ┐‚
+┐‚ Phase 2       ┐‚ Opportunity Database & Ingestion Engine (MVP 6 Categories)  ┐‚
+┐‚ Phase 3       ┐‚ Explainable Matching & Strict Eligibility Engine            ┐‚
+┐‚ Phase 4       ┐‚ Home Universe, Daily Brief & Category Shelves               ┐‚
+┐‚ Phase 5       ┐‚ Autonomous "My Missions" & Oppverse AI Chat Advisor         ┐‚
+┐‚ Phase 6       ┐‚ Application Workspace, Document Vault & Pipeline Tracker    ┐‚
+┐‚ Phase 7       ┐‚ Polish, Security, Multi-Account Verification & Deployment   ┐‚
+┐”───────────────┐´─────────────────────────────────────────────────────────────┐˜
 ```
 
 ---
@@ -173,7 +173,7 @@ create table public.applications (
   - Step 2: Confirm extracted data (Skills tags, Experience timeline).
   - Step 3: Opportunity Universe preferences (Jobs, Fellowships, Scholarships, Grants, Conferences, Travel).
 - [ ] **Step 1.3: Explainable Profile Strength Meter**
-  - Visual widget calculating profile completeness (e.g., *"78% Strength â€” Add your nationality to unlock scholarship eligibility checks"*).
+  - Visual widget calculating profile completeness (e.g., *"78% Strength — Add your nationality to unlock scholarship eligibility checks"*).
 - [ ] **Step 1.4: Multi-Persona Support**
   - Allow switching between Personas (e.g. *Tomide the PMM* vs *Tomide the Founder* vs *Tomide the Speaker*).
 
@@ -186,7 +186,7 @@ create table public.applications (
     - ðŸŽ“ **Scholarships:** Fully funded Master's/PhD (Chevening, DAAD, Mastercard Foundation, Commonwealth).
     - ðŸ›ï¸ **Fellowships:** Leadership and tech fellowships (Obama Foundation, Echoing Green, Techstars).
     - ðŸ’° **Grants:** Non-dilutive startup and research grants (Tony Elumelu, Google for Startups Africa).
-    - âœˆï¸ **Travel Opportunities:** Fully funded conferences & summit speaker grants.
+    - ✈️ **Travel Opportunities:** Fully funded conferences & summit speaker grants.
     - ðŸš€ **Accelerators:** Early-stage startup programs (Y Combinator, Techstars, ARM Labs).
 - [ ] **Step 2.2: Discover & Search Page UI**
   - Category filters, country eligibility dropdown, funding pill filters (`Fully Funded`, `Partial`, `Paid`).
@@ -214,7 +214,7 @@ create table public.applications (
   - Personalized morning greeting: *"Good morning, Tomide. 24 new opportunities discovered. 3 Strong Matches for you today."*
   - Interactive Action Cards: `[View Match]`, `[Save]`, `[Dismiss]`.
 - [x] **Step 4.2: Curated Feed Shelves**
-  - â­ **Best Matches** (Highest overall fit score)
+  - ⭐ **Best Matches** (Highest overall fit score)
   - ðŸ†• **New Today** (Fresh opportunities added within 24h)
   - â³ **Closing Soon** (Deadlines within 14 days)
   - ðŸ’Ž **Fully Funded** (100% covered programs)

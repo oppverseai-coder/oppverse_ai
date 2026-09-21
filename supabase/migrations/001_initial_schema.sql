@@ -92,7 +92,7 @@ create table if not exists public.opportunities (
   host_country text,
   eligible_countries text[] default '{"All"}',
   funding_status text default 'Fully Funded',
-  funding_amount text, -- e.g. "â‚¬4,200/mo + Flights + Housing"
+  funding_amount text, -- e.g. "€4,200/mo + Flights + Housing"
   application_complexity text default 'Moderate', -- 'Quick', 'Moderate', 'Heavy'
   required_documents text[] default '{"CV", "Motivation Letter"}',
   experience_required text,

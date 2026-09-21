@@ -1,6 +1,21 @@
 ﻿# Oppverse AI — Project Reference & Assistant Guidelines
 
+> [!CRITICAL]
+> **MANDATORY PRE-FLIGHT INSTRUCTION:**
+> Every AI agent (Antigravity, Claude, Codex, Cursor) **MUST ALWAYS** read and adhere to [`ANTIGRAVITY.md`](file:///C:/Projects/oppverse_ai/ANTIGRAVITY.md) and its 20 Immutable Rules before touching any code or making any modifications in this repository.
+
 Oppverse is an AI-powered opportunity intelligence platform that continuously discovers, understands, ranks, and recommends personalized global opportunities (Jobs, Fellowships, Scholarships, Grants, Conferences, Travel, Accelerators) built around the individual.
+
+---
+
+## 🚫 Antigravity & AI Agent Safeguards Contract
+All development in this repository is strictly governed by the 20 Immutable Rules in [`ANTIGRAVITY.md`](file:///C:/Projects/oppverse_ai/ANTIGRAVITY.md):
+- **NEVER modify or redesign UI layouts, components, cards, padding, or margins.**
+- **NEVER use AI slop icons, sparkles, stars, glowing badges, or artificial gradients.**
+- **NEVER add or replace any icon without asking for user permission first.**
+- **NEVER touch design tokens, typography, or theme architecture.**
+- **NEVER modify the public landing page (`app/page.tsx` / `/`).**
+- **Antigravity is restricted strictly to backend logic, API routes, data pipelines, error fixes, and build validations.**
 
 ---
 
@@ -46,6 +61,7 @@ Before running any `git commit`, `git push`, or `vercel deploy`:
 
 ## 📁 Project Architecture & Key Documents
 
+- **[`ANTIGRAVITY.md`](file:///C:/Projects/oppverse_ai/ANTIGRAVITY.md):** The 20 Immutable Safeguards & Design Rules for AI assistants.
 - **[`MEMORY.md`](file:///C:/Projects/oppverse_ai/MEMORY.md):** Detailed memory and state of the latest executed action.
 - **[`LOGS.md`](file:///C:/Projects/oppverse_ai/LOGS.md):** Chronological audit trail of all project actions.
 - **[`PRD.md`](file:///c:/Projects/oppverse_ai/PRD.md):** Complete Oppverse Product Requirements Document (V1.0) — Product Thesis, 7 Major Engines, 16 Opportunity Categories, Explainable Matching, and Release Roadmap.
@@ -77,7 +93,7 @@ Before running any `git commit`, `git push`, or `vercel deploy`:
 
 ## 🎨 Immutable Design, Brand & Theme Contract (Mandatory)
 
-Before any UI, styling, navigation, authentication, shell, route, Figma, generator, or deployment work, read and follow [`docs/DESIGN_AND_ROUTE_CONTRACT.md`](docs/DESIGN_AND_ROUTE_CONTRACT.md).
+Before any UI, styling, navigation, authentication, shell, route, Figma, generator, or deployment work, read and follow [`docs/DESIGN_AND_ROUTE_CONTRACT.md`](docs/DESIGN_AND_ROUTE_CONTRACT.md) and [`ANTIGRAVITY.md`](ANTIGRAVITY.md).
 
 - Do not modify Oppverse branding, typography, color identity, light/dark theme architecture, selected-state behavior, landing-page presentation, or application layout as collateral work.
 - Oppverse violet is reserved for primary actions, selected filters, active navigation, and focus states. Inactive controls remain neutral in both themes.
